@@ -1,23 +1,34 @@
-"use client"
-
 import { Ionicons } from "@expo/vector-icons"
-import { router } from "expo-router"
 import React, { useEffect, useState } from "react"
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native"
+import { AuthProvider } from "../src/context/AuthContext"
 
 import { LoginModal } from "../src/components/LoginModal"
-
 import { RegisterModal } from "../src/components/RegisterModal"
 import { UserProfileModal } from "../src/components/UserProfileModal"
 import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 
+export default function App() {
+  return (
+    <AuthProvider>
+      <HomeScreen />
+    </AuthProvider>
+  )
+}
 
-
-
-export default function HomeScreen() {
+function HomeScreen() {
   const { state, forceRefresh } = useAuth()
- 
+
   const [cartVisible, setCartVisible] = useState<boolean>(false)
   const [loginVisible, setLoginVisible] = useState<boolean>(false)
   const [registerVisible, setRegisterVisible] = useState<boolean>(false)
@@ -25,8 +36,6 @@ export default function HomeScreen() {
 
   const [loading, setLoading] = useState<boolean>(false)
   const [searchQuery, setSearchQuery] = useState<string>("")
-
-  
 
   const handleNavigateToRegister = () => {
     setLoginVisible(false)
@@ -43,8 +52,6 @@ export default function HomeScreen() {
     setRegisterVisible(false)
   }
 
-  
-
   const handleUserIconPress = () => {
     if (state.isAuthenticated) {
       setUserProfileVisible(true)
@@ -54,7 +61,7 @@ export default function HomeScreen() {
   }
 
   // Cerrar modal de perfil automáticamente si el usuario se desloguea
-  React.useEffect(() => {
+  useEffect(() => {
     if (!state.isAuthenticated && userProfileVisible) {
       console.log("🔄 User logged out - closing profile modal")
       setUserProfileVisible(false)
@@ -62,7 +69,7 @@ export default function HomeScreen() {
   }, [state.isAuthenticated, userProfileVisible])
 
   // Efecto para debug y forzar actualización visual
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("🔍 Auth state changed:", {
       isAuthenticated: state.isAuthenticated,
       user: state.user?.email || "none",
@@ -75,6 +82,86 @@ export default function HomeScreen() {
     }
   }, [state.isAuthenticated, state.user])
 
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.iconButton} onPress={handleUserIconPress}>
+          <Ionicons name="person-circle-outline" size={32} color={Colors.light.text} />
+        </TouchableOpacity>
+
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Inicio</Text>
+        </View>
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.adminButton}>
+            <Ionicons name="settings-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color={Colors.light.icon} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar producto..."
+          placeholderTextColor={Colors.light.icon}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity style={styles.clearButton} onPress={() => setSearchQuery("")}>
+            <Ionicons name="close-circle" size={20} color={Colors.light.icon} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={styles.loadingText}>Cargando productos...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={[]} // Aquí puedes colocar tu lista de productos
+          keyExtractor={(item, index) => index.toString()}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="cube-outline" size={64} color={Colors.light.icon} />
+              <Text style={styles.emptyText}>No hay productos disponibles</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={forceRefresh}>
+                <Text style={styles.retryButtonText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Image source={{ uri: item.image }} style={styles.image} />
+              <View style={styles.info}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.price}>${item.price}</Text>
+              </View>
+            </View>
+          )}
+        />
+      )}
+
+      {/* Modales */}
+      <LoginModal
+        visible={loginVisible}
+        onClose={handleCloseAuth}
+        onNavigateToRegister={handleNavigateToRegister}
+      />
+      <RegisterModal
+        visible={registerVisible}
+        onClose={handleCloseAuth}
+        onNavigateToLogin={handleNavigateToLogin}
+      />
+      <UserProfileModal visible={userProfileVisible} onClose={() => setUserProfileVisible(false)} />
+    </View>
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -104,25 +191,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: Colors.light.text,
   },
-  socialMediaContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-    gap: 8,
-  },
-  socialButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#f8f8f8",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
-    elevation: 2,
-  },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
@@ -135,29 +203,6 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: "center",
     justifyContent: "center",
-  },
-  cartContainer: {
-    position: "relative",
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cartBadge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    backgroundColor: Colors.light.accent,
-    borderRadius: 8,
-    paddingHorizontal: 5,
-    minWidth: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cartBadgeText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 12,
   },
   listContainer: {
     paddingBottom: 24,
@@ -217,35 +262,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.icon,
   },
-  stock: {
-    fontSize: 12,
-    color: Colors.light.icon,
-    marginTop: 2,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 4,
-    marginBottom: 8,
-  },
-  statsText: {
-    fontSize: 14,
-    color: Colors.light.icon,
-  },
-  refreshButton: {
-    padding: 4,
-  },
-  category: {
-    fontSize: 12,
-    color: Colors.light.primary,
-    marginTop: 2,
-    fontStyle: "italic",
-  },
-  outOfStock: {
-    color: Colors.light.error,
-    fontWeight: "bold",
-  },
   emptyContainer: {
     alignItems: "center",
     paddingVertical: 40,
@@ -266,4 +282,4 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
-}
+})
