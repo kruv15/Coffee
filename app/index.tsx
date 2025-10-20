@@ -1,7 +1,4 @@
-"use client"
-
 import { Ionicons } from "@expo/vector-icons"
-import { router } from "expo-router"
 import React, { useEffect, useState } from "react"
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
 import { CartModal } from "../src/components/CartModal"
@@ -193,7 +190,7 @@ export default function HomeScreen() {
   }
 
   // Cerrar modal de perfil automáticamente si el usuario se desloguea
-  React.useEffect(() => {
+  useEffect(() => {
     if (!state.isAuthenticated && userProfileVisible) {
       console.log("🔄 User logged out - closing profile modal")
       setUserProfileVisible(false)
@@ -201,7 +198,7 @@ export default function HomeScreen() {
   }, [state.isAuthenticated, userProfileVisible])
 
   // Efecto para debug y forzar actualización visual
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("🔍 Auth state changed:", {
       isAuthenticated: state.isAuthenticated,
       user: state.user?.email || "none",
@@ -406,25 +403,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: Colors.light.text,
   },
-  socialMediaContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-    gap: 8,
-  },
-  socialButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#f8f8f8",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
-    elevation: 2,
-  },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
@@ -437,29 +415,6 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: "center",
     justifyContent: "center",
-  },
-  cartContainer: {
-    position: "relative",
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cartBadge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    backgroundColor: Colors.light.accent,
-    borderRadius: 8,
-    paddingHorizontal: 5,
-    minWidth: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cartBadgeText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 12,
   },
   listContainer: {
     paddingBottom: 24,
@@ -518,35 +473,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 16,
     color: Colors.light.icon,
-  },
-  stock: {
-    fontSize: 12,
-    color: Colors.light.icon,
-    marginTop: 2,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 4,
-    marginBottom: 8,
-  },
-  statsText: {
-    fontSize: 14,
-    color: Colors.light.icon,
-  },
-  refreshButton: {
-    padding: 4,
-  },
-  category: {
-    fontSize: 12,
-    color: Colors.light.primary,
-    marginTop: 2,
-    fontStyle: "italic",
-  },
-  outOfStock: {
-    color: Colors.light.error,
-    fontWeight: "bold",
   },
   emptyContainer: {
     alignItems: "center",
