@@ -47,6 +47,7 @@
       "typedRoutes": true
     },
     "extra": {
+      "EXPO_ROUTER_APP_ROOT": "app",
       "router": {},
       "eas": {
         "projectId": "83e7afce-41a2-4c82-9086-86beb9e5e7c9"
