@@ -38,7 +38,7 @@ export function UserProfile({ visible, onClose, onLoginPress }: UserProfileProps
 
     setLoading(true);
     try {
-      const response = await fetch('https://back-coffee.onrender.com/api/usuarios/perfil', {
+      const response = await fetch('/api/usuarios/perfil', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${state.token}`,
