@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons"
+import { router } from "expo-router"
 import React, { useEffect, useState } from "react"
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
 import { CartModal } from "../src/components/CartModal"
@@ -493,5 +494,63 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  socialMediaContainer: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  socialButton: {
+    padding: 4,
+  },
+  cartContainer: {
+    position: "relative",
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: "#f44336",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cartBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  stock: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
+  outOfStock: {
+    color: "#f44336",
+  },
+  category: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
+    fontStyle: "italic",
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 4,
+    marginBottom: 12,
+    paddingVertical: 8,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 8,
+  },
+  statsText: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+  },
+  refreshButton: {
+    padding: 4,
   },
 })

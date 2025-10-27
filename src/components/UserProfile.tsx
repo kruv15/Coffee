@@ -52,11 +52,13 @@ export function UserProfile({ visible, onClose, onLoginPress }: UserProfileProps
         setProfileData(data.usuario || data);
       } else {
         console.error('Error fetching profile:', data);
-        Alert.alert('Error', 'No se pudo cargar el perfil');
+        // No mostrar alerta, solo usar datos del estado local
+        setProfileData(null);
       }
     } catch (error) {
       console.error('Profile fetch error:', error);
-      Alert.alert('Error', 'Error de conexión');
+      // No mostrar alerta, solo usar datos del estado local
+      setProfileData(null);
     } finally {
       setLoading(false);
     }
