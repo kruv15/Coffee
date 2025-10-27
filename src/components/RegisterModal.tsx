@@ -96,7 +96,7 @@ export function RegisterModal({ visible, onClose, onNavigateToLogin }: RegisterM
 
       console.log('📤 Sending registration request:', requestBody);
 
-      const response = await fetch('https://back-coffee.onrender.com/api/usuarios/registrar', {
+      const response = await fetch('https://prueba-b5a7.onrender.com/api/usuarios/registrar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
