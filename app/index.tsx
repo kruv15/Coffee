@@ -30,7 +30,7 @@ export default function HomeScreen() {
     try {
       console.log("🔄 Home: Loading ALL products from database...")
 
-      const response = await fetch("https://prueba-b5a7.onrender.com/api/productos", {
+      const response = await fetch("https://back-coffee.onrender.com/api/productos", {
         method: "GET",
         headers: {
           Accept: "application/json",
@@ -250,7 +250,7 @@ export default function HomeScreen() {
         />
       </TouchableOpacity>
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>Amber Infusion</Text>
+        <Text style={styles.title}>App Café</Text>
         {/* Iconos de redes sociales */}
         <View style={styles.socialMediaContainer}>
           <TouchableOpacity
