@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://prueba-b5a7.onrender.com/api"
+const API_BASE_URL = "https://back-coffee.onrender.com/api"
 
 export interface CreateOrderRequest {
   productos: {
