@@ -11,7 +11,6 @@ import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { socialMediaService } from "../src/services/socialMediaService"
 import type { CartItem, Product } from "../src/types"
-import { debugAPI } from "../src/utils/testApi"
 
 export default function HomeScreen() {
   const { state, forceRefresh } = useAuth()
@@ -111,7 +110,6 @@ export default function HomeScreen() {
 
   // Cargar productos al montar el componente
   useEffect(() => {
-    debugAPI() // Para debug
     loadProductsFromAPI()
   }, [])
 
