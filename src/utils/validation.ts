@@ -123,12 +123,21 @@ export const validateStock = (stock: string): ValidationResult => {
 
 export const validateImageUrl = (url: string): ValidationResult => {
   const errors: string[] = [];
-  const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i;
   
   if (!url.trim()) {
     errors.push('La URL de la imagen es requerida');
-  } else if (!urlPattern.test(url.trim())) {
-    errors.push('Debe ser una URL válida de imagen (jpg, jpeg, png, gif, webp)');
+  } else {
+    const trimmedUrl = url.trim();
+    // Validar que sea una URL válida (más flexible)
+    const urlPattern = /^https?:\/\/.+/i;
+    
+    if (!urlPattern.test(trimmedUrl)) {
+      errors.push('Debe ser una URL válida que comience con http o https');
+    } else if (trimmedUrl.length > 500) {
+      errors.push('La URL es demasiado larga');
+    }
+    // Nota: No validamos la extensión específica ya que muchas URLs 
+    // de servicios como Cloudinary no muestran la extensión
   }
   
   return {

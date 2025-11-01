@@ -16,6 +16,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../types';
 import { productService, CreateProductData } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import {
+  validateProductName,
+  validatePrice,
+  validateStock,
+  validateImageUrl,
+  validateRequired,
+} from '../utils/validation';
 
 interface AddProductModalProps {
   visible: boolean;
@@ -28,6 +35,7 @@ interface AddProductModalProps {
 
 const CATEGORIES = [
   { value: 'cafe', label: 'Café' },
+  // Solo café por ahora
 ];
 
 export function AddProductModal({
@@ -80,60 +88,39 @@ export function AddProductModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // nomProd: 2-100 caracteres, obligatorio
-    if (!formData.nomProd.trim()) {
-      newErrors.nomProd = 'El nombre es requerido';
-    } else if (formData.nomProd.trim().length < 2) {
-      newErrors.nomProd = 'El nombre debe tener al menos 2 caracteres';
-    } else if (formData.nomProd.trim().length > 100) {
-      newErrors.nomProd = 'El nombre no puede exceder 100 caracteres';
+    // Usar funciones de validación
+    const nameValidation = validateProductName(formData.nomProd);
+    if (!nameValidation.isValid) {
+      newErrors.nomProd = nameValidation.errors[0];
     }
 
-    // descripcionProd: 10-500 caracteres, obligatorio
-    if (!formData.descripcionProd.trim()) {
-      newErrors.descripcionProd = 'La descripción es requerida';
+    const descValidation = validateRequired(formData.descripcionProd, 'Descripción');
+    if (!descValidation.isValid) {
+      newErrors.descripcionProd = descValidation.errors[0];
     } else if (formData.descripcionProd.trim().length < 10) {
       newErrors.descripcionProd = 'La descripción debe tener al menos 10 caracteres';
     } else if (formData.descripcionProd.trim().length > 500) {
       newErrors.descripcionProd = 'La descripción no puede exceder 500 caracteres';
     }
 
-    // precioProd: Número positivo, obligatorio
-    if (!formData.precioProd.trim()) {
-      newErrors.precioProd = 'El precio es requerido';
-    } else {
-      const price = parseFloat(formData.precioProd);
-      if (isNaN(price) || price <= 0) {
-        newErrors.precioProd = 'El precio debe ser un número positivo';
-      } else if (price > 999999) {
-        newErrors.precioProd = 'El precio es demasiado alto';
-      }
+    const priceValidation = validatePrice(formData.precioProd);
+    if (!priceValidation.isValid) {
+      newErrors.precioProd = priceValidation.errors[0];
     }
 
-    // stock: Número entero positivo, obligatorio
-    if (!formData.stock.trim()) {
-      newErrors.stock = 'El stock es requerido';
-    } else {
-      const stock = parseInt(formData.stock);
-      if (isNaN(stock) || stock < 0) {
-        newErrors.stock = 'El stock debe ser un número entero positivo o cero';
-      } else if (!Number.isInteger(Number(formData.stock))) {
-        newErrors.stock = 'El stock debe ser un número entero';
-      }
+    const stockValidation = validateStock(formData.stock);
+    if (!stockValidation.isValid) {
+      newErrors.stock = stockValidation.errors[0];
     }
 
-    // categoria: debe ser "cafe" siempre
+    const imageValidation = validateImageUrl(formData.imagen);
+    if (!imageValidation.isValid) {
+      newErrors.imagen = imageValidation.errors[0];
+    }
+
+    // Categoría siempre debe ser "cafe"
     if (formData.categoria !== 'cafe') {
-      newErrors.categoria = 'La categoría debe ser "cafe"';
-      // Auto-corregir si no es "cafe"
       setFormData(prev => ({ ...prev, categoria: 'cafe' }));
-    }
-
-    // imagen: URL válida, obligatorio
-    if (!formData.imagen.trim()) {
-      newErrors.imagen = 'La URL de la imagen es requerida';
-    } else if (!formData.imagen.trim().match(/^https?:\/\/.+/)) {
-      newErrors.imagen = 'Debe ser una URL válida que comience con http o https';
     }
 
     setErrors(newErrors);
@@ -503,4 +490,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-   
+

@@ -3,7 +3,7 @@ export const testProductsAPI = async () => {
   console.log('🧪 Testing API directly...');
   
   try {
-    const response = await fetch('https://prueba-b5a7.onrender.com/api/productos?categoria=cafe');
+    const response = await fetch('https://back-coffee.onrender.com/api/productos?categoria=cafe');
     console.log('📡 Test response status:', response.status);
     console.log('📡 Test response headers:', Object.fromEntries(response.headers.entries()));
     
@@ -36,7 +36,7 @@ export const debugAPI = async () => {
   try {
     console.log('🧪 DEBUG: Testing API connection...');
     
-    const response = await fetch('https://prueba-b5a7.onrender.com/api/productos', {
+    const response = await fetch('https://back-coffee.onrender.com/api/productos', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

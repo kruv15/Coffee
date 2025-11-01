@@ -33,8 +33,8 @@ export default function AdminScreen() {
     
     try {
       console.log('🔄 Admin: Loading ALL products from database...');
-      
-      const response = await fetch('https://prueba-b5a7.onrender.com/api/productos', {
+    
+      const response = await fetch('https://back-coffee.onrender.com/api/productos', {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -223,12 +223,12 @@ export default function AdminScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Panel de Administración</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.reportsButton} 
             onPress={() => setDropdownVisible(true)}
           >
             <Ionicons name="bar-chart" size={24} color="#fff" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity style={styles.addButton} onPress={handleAddNewProduct}>
             <Ionicons name="add" size={24} color="#fff" />
           </TouchableOpacity>

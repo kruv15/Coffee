@@ -13,6 +13,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { 
+  validateRequired, 
+  validateEmail, 
+  validatePassword, 
+  validatePhone 
+} from '../utils/validation';
 
 interface RegisterModalProps {
   visible: boolean;
@@ -41,29 +47,39 @@ export function RegisterModal({ visible, onClose, onNavigateToLogin }: RegisterM
     // Add console log to verify function is being called
     console.log('🔄 Starting registration process...');
     
-    if (!name || !lastName || !phone || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Por favor, completa todos los campos');
+    // Usar funciones de validación
+    const nameValidation = validateRequired(name, 'Nombre');
+    if (!nameValidation.isValid) {
+      Alert.alert('Error', nameValidation.errors[0]);
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Por favor, ingresa un email válido');
+    const lastNameValidation = validateRequired(lastName, 'Apellido');
+    if (!lastNameValidation.isValid) {
+      Alert.alert('Error', lastNameValidation.errors[0]);
+      return;
+    }
+
+    const phoneValidation = validatePhone(phone);
+    if (!phoneValidation.isValid) {
+      Alert.alert('Error', phoneValidation.errors[0]);
+      return;
+    }
+
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      Alert.alert('Error', emailValidation.errors[0]);
+      return;
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      Alert.alert('Error', passwordValidation.errors[0]);
       return;
     }
 
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Las contraseñas no coinciden');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-
-    if (phone.length < 8) {
-      Alert.alert('Error', 'Por favor, ingresa un número de teléfono válido');
       return;
     }
 
@@ -80,7 +96,7 @@ export function RegisterModal({ visible, onClose, onNavigateToLogin }: RegisterM
 
       console.log('📤 Sending registration request:', requestBody);
 
-      const response = await fetch('https://prueba-b5a7.onrender.com/api/usuarios/registrar', {
+      const response = await fetch('https://back-coffee.onrender.com/api/usuarios/registrar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

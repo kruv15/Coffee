@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://prueba-b5a7.onrender.com/api';
+const API_BASE_URL = 'https://back-coffee.onrender.com/api';
 
 export interface CreateProductData {
   nomProd: string;
@@ -23,13 +23,13 @@ export const productService = {
       console.log('🔑 Token (first 30 chars):', token.substring(0, 30) + '...');
       console.log('🌐 URL:', `${API_BASE_URL}/productos`);
       
-      // FORZAR CATEGORIA A "cafe" SIEMPRE
+      // Asegurar que la categoría sea "cafe"
       const formattedData = {
         ...productData,
-        categoria: "cafe" // Siempre enviar "cafe" sin importar lo que seleccione el usuario
+        categoria: "cafe"
       };
       
-      console.log('📝 Formatted Data (categoria forced to "cafe"):', JSON.stringify(formattedData, null, 2));
+      console.log('📝 Formatted Data:', JSON.stringify(formattedData, null, 2));
       
       const response = await fetch(`${API_BASE_URL}/productos`, {
         method: 'POST',
@@ -42,14 +42,13 @@ export const productService = {
       });
       
       console.log('📡 Response Status:', response.status);
-      console.log('📡 Response Headers:', Object.fromEntries(response.headers.entries()));
       
       const responseText = await response.text();
       console.log('📦 Raw Response:', responseText);
       
       let responseData;
       try {
-        responseData = JSON.parse(responseText);
+        responseData = responseText ? JSON.parse(responseText) : {};
       } catch (parseError) {
         console.error('❌ JSON Parse Error:', parseError);
         return {
