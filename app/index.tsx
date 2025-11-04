@@ -1,3 +1,5 @@
+"use client"
+
 import { Ionicons } from "@expo/vector-icons"
 import { router } from "expo-router"
 import React, { useEffect, useState } from "react"
@@ -11,6 +13,7 @@ import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { socialMediaService } from "../src/services/socialMediaService"
 import type { CartItem, Product } from "../src/types"
+import { debugAPI } from "../src/utils/testApi"
 
 export default function HomeScreen() {
   const { state, forceRefresh } = useAuth()
@@ -110,6 +113,7 @@ export default function HomeScreen() {
 
   // Cargar productos al montar el componente
   useEffect(() => {
+    debugAPI() // Para debug
     loadProductsFromAPI()
   }, [])
 
@@ -178,6 +182,10 @@ export default function HomeScreen() {
 
   const handleGoToAdmin = () => {
     router.push("/admin")
+  }
+
+  const handleGoToChat = () => {
+    router.push("/chat")
   }
 
   const handleUserIconPress = () => {
@@ -252,21 +260,20 @@ export default function HomeScreen() {
         <Text style={styles.title}>Amber Infusion</Text>
         {/* Iconos de redes sociales */}
         <View style={styles.socialMediaContainer}>
-          <TouchableOpacity
-            onPress={() => socialMediaService.openTikTok()}
-            style={styles.socialButton}
-          >
+          <TouchableOpacity onPress={() => socialMediaService.openTikTok()} style={styles.socialButton}>
             <Ionicons name="logo-tiktok" size={20} color="#ff0050" />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => socialMediaService.openInstagram()}
-            style={styles.socialButton}
-          >
+          <TouchableOpacity onPress={() => socialMediaService.openInstagram()} style={styles.socialButton}>
             <Ionicons name="logo-instagram" size={20} color="#E4405F" />
           </TouchableOpacity>
         </View>
       </View>
       <View style={styles.headerRight}>
+        {state.isAuthenticated && (
+          <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
+            <Ionicons name="chatbubbles" size={24} color="#fff" />
+          </TouchableOpacity>
+        )}
         {state.isAuthenticated && state.user?.role === "admin" && (
           <TouchableOpacity onPress={handleGoToAdmin} style={styles.adminButton}>
             <Ionicons name="settings" size={24} color="#fff" />
@@ -406,6 +413,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  chatButton: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   adminButton: {
     backgroundColor: "#795548",

@@ -1,6 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+"use client"
+
+import { Ionicons } from "@expo/vector-icons"
+import { router } from "expo-router"
+import React, { useEffect, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
@@ -12,208 +14,206 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { AddProductModal } from '../src/components/AddProductModal';
-import { useAuth } from '../src/context/AuthContext';
-import { productService } from '../src/services/api';
-import { Product } from '../src/types';
+} from "react-native"
+import { AddProductModal } from "../src/components/AddProductModal"
+import { useAuth } from "../src/context/AuthContext"
+import { productService } from "../src/services/api"
+import type { Product } from "../src/types"
 
 export default function AdminScreen() {
-  const { state } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [addModalVisible, setAddModalVisible] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const { state } = useAuth()
+  const [products, setProducts] = useState<Product[]>([])
+  const [addModalVisible, setAddModalVisible] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [dropdownVisible, setDropdownVisible] = useState(false)
 
   // Load products from database
   const loadProducts = async (showLoading = true) => {
-    if (showLoading) setLoading(true);
-    
+    if (showLoading) setLoading(true)
+
     try {
-      console.log('🔄 Admin: Loading ALL products from database...');
-    
-      const response = await fetch('https://back-coffee.onrender.com/api/productos', {
-        method: 'GET',
+      console.log("🔄 Admin: Loading ALL products from database...")
+
+      const response = await fetch("https://back-coffee.onrender.com/api/productos", {
+        method: "GET",
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
-      });
-      
-      console.log('📡 Admin API Response status:', response.status);
-      
+      })
+
+      console.log("📡 Admin API Response status:", response.status)
+
       if (response.ok) {
-        const data = await response.json();
-        console.log('📦 Admin API response data:', JSON.stringify(data, null, 2));
-        
+        const data = await response.json()
+        console.log("📦 Admin API response data:", JSON.stringify(data, null, 2))
+
         // Extraer productos de la estructura correcta según las imágenes del debug
-        let productsArray = [];
-        
+        let productsArray = []
+
         if (data && data.data && data.data.productos && Array.isArray(data.data.productos)) {
-          productsArray = data.data.productos;
-          console.log('✅ Admin: Found products in data.data.productos:', productsArray.length);
+          productsArray = data.data.productos
+          console.log("✅ Admin: Found products in data.data.productos:", productsArray.length)
         } else if (data && data.productos && Array.isArray(data.productos)) {
-          productsArray = data.productos;
-          console.log('✅ Admin: Found products in data.productos:', productsArray.length);
+          productsArray = data.productos
+          console.log("✅ Admin: Found products in data.productos:", productsArray.length)
         } else if (Array.isArray(data)) {
-          productsArray = data;
-          console.log('✅ Admin: Found products as direct array:', productsArray.length);
+          productsArray = data
+          console.log("✅ Admin: Found products as direct array:", productsArray.length)
         } else {
-          console.log('❌ Admin: No products array found in response structure');
-          console.log('📦 Admin Available keys:', Object.keys(data || {}));
-          setProducts([]);
-          return;
+          console.log("❌ Admin: No products array found in response structure")
+          console.log("📦 Admin Available keys:", Object.keys(data || {}))
+          setProducts([])
+          return
         }
-        
-        console.log('📋 Admin Products array to process:', productsArray);
-        
+
+        console.log("📋 Admin Products array to process:", productsArray)
+
         if (Array.isArray(productsArray) && productsArray.length > 0) {
           const formattedProducts: Product[] = productsArray.map((product: any, index: number) => {
-            console.log(`🔄 Admin Processing product ${index + 1}:`, product);
-            
+            console.log(`🔄 Admin Processing product ${index + 1}:`, product)
+
             const formattedProduct = {
               id: product._id || product.id || `temp_${Date.now()}_${index}`,
-              name: product.nomProd || product.nombre || product.name || 'Producto sin nombre',
+              name: product.nomProd || product.nombre || product.name || "Producto sin nombre",
               price: Number(product.precioProd || product.precio || product.price || 0),
-              image: product.imagen || product.image || 'https://via.placeholder.com/300x200?text=Sin+Imagen',
-              description: product.descripcionProd || product.descripcion || product.description || '',
+              image: product.imagen || product.image || "https://via.placeholder.com/300x200?text=Sin+Imagen",
+              description: product.descripcionProd || product.descripcion || product.description || "",
               stock: Number(product.stock || 0),
-              category: product.categoria || product.category || 'cafe',
-            };
-            
-            console.log(`✅ Admin Formatted product ${index + 1}:`, formattedProduct);
-            return formattedProduct;
-          });
-          
-          console.log('✅ Admin: Products formatted successfully:', formattedProducts.length);
-          console.log('📋 Admin All formatted products:', formattedProducts);
-          setProducts(formattedProducts);
+              category: product.categoria || product.category || "cafe",
+            }
+
+            console.log(`✅ Admin Formatted product ${index + 1}:`, formattedProduct)
+            return formattedProduct
+          })
+
+          console.log("✅ Admin: Products formatted successfully:", formattedProducts.length)
+          console.log("📋 Admin All formatted products:", formattedProducts)
+          setProducts(formattedProducts)
         } else {
-          console.log('📦 Admin: Empty products array or no products found');
-          setProducts([]);
+          console.log("📦 Admin: Empty products array or no products found")
+          setProducts([])
         }
       } else {
-        console.log(`❌ Admin: API request failed with status: ${response.status}`);
-        const errorText = await response.text();
-        console.log('❌ Admin Error response:', errorText);
-        Alert.alert('Error', 'No se pudieron cargar los productos de la base de datos');
-        setProducts([]);
+        console.log(`❌ Admin: API request failed with status: ${response.status}`)
+        const errorText = await response.text()
+        console.log("❌ Admin Error response:", errorText)
+        Alert.alert("Error", "No se pudieron cargar los productos de la base de datos")
+        setProducts([])
       }
     } catch (error) {
-      console.error('❌ Admin: Error loading products:', error);
-      Alert.alert('Error', 'Error de conexión con la base de datos');
-      setProducts([]);
+      console.error("❌ Admin: Error loading products:", error)
+      Alert.alert("Error", "Error de conexión con la base de datos")
+      setProducts([])
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setLoading(false)
+      setRefreshing(false)
     }
-  };
+  }
 
   // Cargar productos al montar el componente
   useEffect(() => {
-    loadProducts();
-  }, []);
+    loadProducts()
+  }, [])
 
   const onRefresh = () => {
-    setRefreshing(true);
-    loadProducts(false);
-  };
+    setRefreshing(true)
+    loadProducts(false)
+  }
 
   const handleDeleteProduct = async (productId: string, productName: string) => {
-    Alert.alert(
-      'Confirmar eliminación',
-      `¿Estás seguro de que quieres eliminar "${productName}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: async () => {
-            if (!state.token) {
-              Alert.alert('Error', 'No tienes autorización para eliminar productos');
-              return;
-            }
+    Alert.alert("Confirmar eliminación", `¿Estás seguro de que quieres eliminar "${productName}"?`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          if (!state.token) {
+            Alert.alert("Error", "No tienes autorización para eliminar productos")
+            return
+          }
 
-            try {
-              console.log('🗑️ Deleting product:', productId);
-              const result = await productService.deleteProduct(productId, state.token);
-              
-              if (result.success) {
-                Alert.alert('Éxito', 'Producto eliminado correctamente');
-                await loadProducts();
-              } else {
-                Alert.alert('Error', result.message || 'No se pudo eliminar el producto');
-              }
-            } catch (error) {
-              console.error('❌ Error deleting product:', error);
-              Alert.alert('Error', 'Error de conexión al eliminar el producto');
+          try {
+            console.log("🗑️ Deleting product:", productId)
+            const result = await productService.deleteProduct(productId, state.token)
+
+            if (result.success) {
+              Alert.alert("Éxito", "Producto eliminado correctamente")
+              await loadProducts()
+            } else {
+              Alert.alert("Error", result.message || "No se pudo eliminar el producto")
             }
-          },
+          } catch (error) {
+            console.error("❌ Error deleting product:", error)
+            Alert.alert("Error", "Error de conexión al eliminar el producto")
+          }
         },
-      ]
-    );
-  };
+      },
+    ])
+  }
 
   const handleEditProduct = (product: Product) => {
-    console.log('✏️ Editing product:', product.name);
-    setEditingProduct(product);
-    setAddModalVisible(true);
-  };
+    console.log("✏️ Editing product:", product.name)
+    setEditingProduct(product)
+    setAddModalVisible(true)
+  }
 
   const handleAddNewProduct = () => {
-    console.log('➕ Adding new product');
-    setEditingProduct(null);
-    setAddModalVisible(true);
-  };
+    console.log("➕ Adding new product")
+    setEditingProduct(null)
+    setAddModalVisible(true)
+  }
 
   const handleProductCreated = async () => {
-    console.log('✅ Product created/updated - reloading list');
-    setAddModalVisible(false);
-    setEditingProduct(null);
+    console.log("✅ Product created/updated - reloading list")
+    setAddModalVisible(false)
+    setEditingProduct(null)
     // Recargar productos después de crear/actualizar
-    await loadProducts(true);
-  };
+    await loadProducts(true)
+  }
 
-  const handleAddProduct = (productData: Omit<Product, 'id'>) => {
+  const handleAddProduct = (productData: Omit<Product, "id">) => {
     const newProduct: Product = {
       ...productData,
-      category: 'cafe',
+      category: "cafe",
       id: Date.now().toString(),
-    };
-    setProducts(prev => [...prev, newProduct]);
-    setAddModalVisible(false);
-    Alert.alert('Éxito', 'Producto agregado localmente');
-  };
+    }
+    setProducts((prev) => [...prev, newProduct])
+    setAddModalVisible(false)
+    Alert.alert("Éxito", "Producto agregado localmente")
+  }
 
   const handleUpdateProduct = (updatedProduct: Product) => {
     const product = {
       ...updatedProduct,
-      category: 'cafe',
-    };
-    setProducts(prev =>
-      prev.map(p => p.id === product.id ? product : p)
-    );
-    setEditingProduct(null);
-    setAddModalVisible(false);
-    Alert.alert('Éxito', 'Producto actualizado localmente');
-  };
+      category: "cafe",
+    }
+    setProducts((prev) => prev.map((p) => (p.id === product.id ? product : p)))
+    setEditingProduct(null)
+    setAddModalVisible(false)
+    Alert.alert("Éxito", "Producto actualizado localmente")
+  }
 
   const handleOpenSalesReport = () => {
-    setDropdownVisible(false);
-    router.push("/");
-  };
+    setDropdownVisible(false)
+    router.push("/")
+  }
 
   const handleOpenOrdersReport = () => {
-    setDropdownVisible(false);
-    router.push('/');
-  };
+    setDropdownVisible(false)
+    router.push("/")
+  }
+
+  const handleOpenAdminChat = () => {
+    router.push("/admin-chat")
+  }
 
   // Debug para verificar el estado de productos
   useEffect(() => {
-    console.log('🔍 Admin Products state changed:', products.length, products);
-  }, [products]);
+    console.log("🔍 Admin Products state changed:", products.length, products)
+  }, [products])
 
   return (
     <View style={styles.container}>
@@ -223,12 +223,9 @@ export default function AdminScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Panel de Administración</Text>
         <View style={styles.headerButtons}>
-          {/* <TouchableOpacity 
-            style={styles.reportsButton} 
-            onPress={() => setDropdownVisible(true)}
-          >
-            <Ionicons name="bar-chart" size={24} color="#fff" />
-          </TouchableOpacity> */}
+          <TouchableOpacity style={styles.chatButton} onPress={handleOpenAdminChat}>
+            <Ionicons name="chatbubbles" size={24} color="#fff" />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.addButton} onPress={handleAddNewProduct}>
             <Ionicons name="add" size={24} color="#fff" />
           </TouchableOpacity>
@@ -242,10 +239,7 @@ export default function AdminScreen() {
         animationType="fade"
         onRequestClose={() => setDropdownVisible(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          onPress={() => setDropdownVisible(false)}
-        >
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setDropdownVisible(false)}>
           <View style={styles.dropdownMenu}>
             <TouchableOpacity style={styles.dropdownItem} onPress={handleOpenSalesReport}>
               <Ionicons name="analytics" size={20} color="#795548" />
@@ -261,9 +255,7 @@ export default function AdminScreen() {
       </Modal>
 
       <View style={styles.statsContainer}>
-        <Text style={styles.statsText}>
-          {loading ? 'Cargando...' : `${products.length} productos encontrados`}
-        </Text>
+        <Text style={styles.statsText}>{loading ? "Cargando..." : `${products.length} productos encontrados`}</Text>
         <TouchableOpacity onPress={() => loadProducts(true)} style={styles.refreshButton}>
           <Ionicons name="refresh" size={20} color="#795548" />
         </TouchableOpacity>
@@ -275,15 +267,11 @@ export default function AdminScreen() {
           <Text style={styles.loadingText}>Cargando productos...</Text>
         </View>
       ) : (
-        <ScrollView 
+        <ScrollView
           style={styles.scrollContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
-          <Text style={styles.sectionTitle}>
-            Productos ({products.length})
-          </Text>
+          <Text style={styles.sectionTitle}>Productos ({products.length})</Text>
           {products.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="cafe" size={64} color="#ccc" />
@@ -295,29 +283,23 @@ export default function AdminScreen() {
           ) : (
             products.map((product, index) => (
               <View key={`${product.id}_${index}`} style={styles.productItem}>
-                <Image 
-                  source={{ uri: product.image }} 
+                <Image
+                  source={{ uri: product.image }}
                   style={styles.productImage}
                   onError={(e) => {
-                    console.log('❌ Image load error for product:', product.name, e.nativeEvent.error);
+                    console.log("❌ Image load error for product:", product.name, e.nativeEvent.error)
                   }}
                   onLoad={() => {
-                    console.log('✅ Image loaded for product:', product.name);
+                    console.log("✅ Image loaded for product:", product.name)
                   }}
                 />
                 <View style={styles.productInfo}>
                   <Text style={styles.productName} numberOfLines={2}>
                     {product.name}
                   </Text>
-                  <Text style={styles.productPrice}>
-                    Bs{product.price.toFixed(2)}
-                  </Text>
-                  <Text style={styles.productStock}>
-                    Stock: {product.stock}
-                  </Text>
-                  <Text style={styles.productCategory}>
-                    {product.category}
-                  </Text>
+                  <Text style={styles.productPrice}>Bs{product.price.toFixed(2)}</Text>
+                  <Text style={styles.productStock}>Stock: {product.stock}</Text>
+                  <Text style={styles.productCategory}>{product.category}</Text>
                   {product.description ? (
                     <Text style={styles.productDescription} numberOfLines={1}>
                       {product.description}
@@ -325,10 +307,7 @@ export default function AdminScreen() {
                   ) : null}
                 </View>
                 <View style={styles.productActions}>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => handleEditProduct(product)}
-                  >
+                  <TouchableOpacity style={styles.editButton} onPress={() => handleEditProduct(product)}>
                     <Ionicons name="pencil" size={20} color="#fff" />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -347,69 +326,77 @@ export default function AdminScreen() {
       <AddProductModal
         visible={addModalVisible}
         onClose={() => {
-          setAddModalVisible(false);
-          setEditingProduct(null);
+          setAddModalVisible(false)
+          setEditingProduct(null)
         }}
         onProductCreated={handleProductCreated}
         editingProduct={editingProduct}
       />
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingTop: 48,
     paddingHorizontal: 16,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 24,
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#222',
+    fontWeight: "bold",
+    color: "#222",
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
   },
-  addButton: {
-    backgroundColor: '#795548',
+  chatButton: {
+    backgroundColor: "#4CAF50",
     borderRadius: 20,
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addButton: {
+    backgroundColor: "#795548",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   reportsButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: "#2196F3",
     borderRadius: 20,
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   scrollContainer: {
     flex: 1,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 16,
-    color: '#333',
+    color: "#333",
   },
   productItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8f8f8",
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -425,110 +412,110 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 4,
   },
   productPrice: {
     fontSize: 14,
-    color: '#795548',
+    color: "#795548",
   },
   productActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   editButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
     borderRadius: 8,
     padding: 8,
   },
   deleteButton: {
-    backgroundColor: '#f44336',
+    backgroundColor: "#f44336",
     borderRadius: 8,
     padding: 8,
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 4,
     marginBottom: 16,
     paddingVertical: 8,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
     borderRadius: 8,
   },
   statsText: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
   refreshButton: {
     padding: 4,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   emptyContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 40,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: "#666",
     marginTop: 16,
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   addFirstButton: {
-    backgroundColor: '#795548',
+    backgroundColor: "#795548",
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
   },
   addFirstButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
   },
   productStock: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
     marginTop: 2,
   },
   productCategory: {
     fontSize: 12,
-    color: '#795548',
+    color: "#795548",
     marginTop: 2,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   productDescription: {
     fontSize: 11,
-    color: '#888',
+    color: "#888",
     marginTop: 2,
   },
   productId: {
     fontSize: 10,
-    color: '#999',
+    color: "#999",
     marginTop: 2,
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "flex-start",
+    alignItems: "flex-end",
     paddingTop: 80,
     paddingRight: 16,
   },
   dropdownMenu: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -536,19 +523,19 @@ const styles = StyleSheet.create({
     minWidth: 180,
   },
   dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   dropdownText: {
     marginLeft: 12,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   dropdownSeparator: {
     height: 1,
-    backgroundColor: '#eee',
+    backgroundColor: "#eee",
     marginHorizontal: 16,
   },
-});
+})
