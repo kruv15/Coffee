@@ -34,13 +34,13 @@ export function CartModal({ visible, cart, onClose, onUpdateQuantity }: CartModa
     onClose();
     
     // Navegar a la pantalla de checkout con los datos del carrito
-    /*router.push({
+    router.push({
       pathname: '/checkout',
       params: {
         cart: JSON.stringify(cart),
         total: total.toString(),
       },
-    });*/
+    });
   };
 
   return (
