@@ -19,7 +19,7 @@ export default function SalesReportScreen() {
   const { state } = useAuth()
   const [salesData, setSalesData] = useState<SalesData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [dateRange, setDateRange] = useState("7days") // 7days, 30days, 90days
+  const [dateRange, setDateRange] = useState("7dias") // 7dias, 30dias, 90dias
   const validStatuses = ["entregado", "delivered", "confirmado", "preparando", "listo"]
 
   const loadSalesData = async () => {
@@ -99,7 +99,7 @@ export default function SalesReportScreen() {
   const calculateSalesData = (orders: any[], range: string): SalesData => {
     // Filtrar pedidos por rango de fechas
     const now = new Date()
-    const daysBack = range === "1day" ? 1 : range === "7days" ? 7 : range === "30days" ? 30 : 90
+    const daysBack = range === "1dia" ? 1 : range === "7dias" ? 7 : range === "30dias" ? 30 : 90
     const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000)
 
     const filteredOrders = orders.filter((order) => {
@@ -239,26 +239,26 @@ export default function SalesReportScreen() {
                 <Text style={[styles.dateButtonText, dateRange === "1day" && styles.activeDateButtonText]}>1 día</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.dateButton, dateRange === "7days" && styles.activeDateButton]}
-                onPress={() => setDateRange("7days")}
+                style={[styles.dateButton, dateRange === "7dias" && styles.activeDateButton]}
+                onPress={() => setDateRange("7dias")}
               >
-                <Text style={[styles.dateButtonText, dateRange === "7days" && styles.activeDateButtonText]}>
+                <Text style={[styles.dateButtonText, dateRange === "7dias" && styles.activeDateButtonText]}>
                   7 días
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.dateButton, dateRange === "30days" && styles.activeDateButton]}
-                onPress={() => setDateRange("30days")}
+                style={[styles.dateButton, dateRange === "30dias" && styles.activeDateButton]}
+                onPress={() => setDateRange("30dias")}
               >
-                <Text style={[styles.dateButtonText, dateRange === "30days" && styles.activeDateButtonText]}>
+                <Text style={[styles.dateButtonText, dateRange === "30dias" && styles.activeDateButtonText]}>
                   30 días
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.dateButton, dateRange === "90days" && styles.activeDateButton]}
+                style={[styles.dateButton, dateRange === "90dias" && styles.activeDateButton]}
                 onPress={() => setDateRange("90days")}
               >
-                <Text style={[styles.dateButtonText, dateRange === "90days" && styles.activeDateButtonText]}>
+                <Text style={[styles.dateButtonText, dateRange === "90dias" && styles.activeDateButtonText]}>
                   90 días
                 </Text>
               </TouchableOpacity>

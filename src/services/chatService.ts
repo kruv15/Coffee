@@ -11,7 +11,7 @@ class ChatService {
   private messageHandlers: Map<string, MessageHandler[]> = new Map()
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
-  private reconnectTimeout: NodeJS.Timeout | null = null
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null
   private isConnecting = false
 
   // Conectar al WebSocket
