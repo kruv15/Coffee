@@ -368,6 +368,11 @@ export default function HomeScreen() {
         cart={cart}
         onClose={() => setCartVisible(false)}
         onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={(item) =>
+          setCart((prev) =>
+            prev.filter((i) => i.id !== item.id || i.pack !== item.pack)
+          )
+        }
       />
 
       <LoginModal visible={loginVisible} onClose={handleCloseAuth} onNavigateToRegister={handleNavigateToRegister} />
