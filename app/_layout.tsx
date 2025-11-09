@@ -10,7 +10,6 @@ import React, { useEffect } from "react"
 import { AuthProvider } from "../src/context/AuthContext"
 import { useColorScheme } from "../src/hooks/useColorScheme"
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
