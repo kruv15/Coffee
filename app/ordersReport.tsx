@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { OrderDetailsModal } from "../src/components/OrderDetailModal";
 import { useAuth } from "../src/context/AuthContext"
 import { orderService, type Order } from "../src/services/orderService"
@@ -218,18 +219,20 @@ export default function OrdersReportScreen() {
 
   if (!state.isAuthenticated) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={28} color="#222" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Pedidos</Text>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={28} color="#222" />
+            </TouchableOpacity>
+            <Text style={styles.title}>Pedidos</Text>
+          </View>
+          <View style={styles.notAuthContainer}>
+            <Ionicons name="lock-closed-outline" size={64} color="#ccc" />
+            <Text style={styles.notAuthText}>Debes iniciar sesión para ver los pedidos</Text>
+          </View>
         </View>
-        <View style={styles.notAuthContainer}>
-          <Ionicons name="lock-closed-outline" size={64} color="#ccc" />
-          <Text style={styles.notAuthText}>Debes iniciar sesión para ver los pedidos</Text>
-        </View>
-      </View>
+      </SafeAreaView>
     )
   }
 
@@ -716,4 +719,9 @@ const styles = StyleSheet.create({
     color: "#666",
     fontStyle: "italic",
   },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingBottom: 24,
+  }
 })
