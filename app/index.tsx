@@ -322,27 +322,19 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {renderHeader()}
+      {renderSearchBar()}
+      {renderProductStats()}
+
       <FlatList
         data={filteredProducts}
         keyExtractor={(item: Product) => item.id}
         renderItem={renderProductItem}
-        ListHeaderComponent={() => (
-          <>
-            {renderHeader()}
-            {renderSearchBar()}
-            {renderProductStats()}
-            {loading && (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={Colors.light.primary} />
-                <Text style={styles.loadingText}>Cargando productos desde la base de datos...</Text>
-              </View>
-            )}
-          </>
-        )}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         refreshing={loading}
         onRefresh={loadProductsFromAPI}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={() =>
           !loading && (
             <View style={styles.emptyContainer}>
@@ -355,6 +347,13 @@ export default function HomeScreen() {
           )
         }
       />
+
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={styles.loadingText}>Cargando productos...</Text>
+        </View>
+      )}
 
       <ProductDetailModal
         visible={!!selectedProduct}
@@ -369,16 +368,12 @@ export default function HomeScreen() {
         onClose={() => setCartVisible(false)}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={(item) =>
-          setCart((prev) =>
-            prev.filter((i) => i.id !== item.id || i.pack !== item.pack)
-          )
+          setCart((prev) => prev.filter((i) => i.id !== item.id || i.pack !== item.pack))
         }
       />
 
       <LoginModal visible={loginVisible} onClose={handleCloseAuth} onNavigateToRegister={handleNavigateToRegister} />
-
       <RegisterModal visible={registerVisible} onClose={handleCloseAuth} onNavigateToLogin={handleNavigateToLogin} />
-
       <UserProfileModal visible={userProfileVisible} onClose={() => setUserProfileVisible(false)} />
     </View>
   )

@@ -8,7 +8,8 @@ import { MapAddressSelector } from "../src/components/MapAddressSelector"
 import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { orderService } from "../src/services/orderService"
-import { whatsappService } from "../src/services/whatsappService"
+import { chatService } from "../src/services/chatService"
+import { orderChatService } from "../src/services/orderChatService"
 import type { CartItem } from "../src/types"
 
 export default function CheckoutScreen() {
@@ -26,7 +27,6 @@ export default function CheckoutScreen() {
     additionalInfo: "",
   })
 
-  const [paymentMethod] = useState("whatsapp")
   const [orderPlaced, setOrderPlaced] = useState(false)
   const [mapVisible, setMapVisible] = useState(false)
 
@@ -37,6 +37,52 @@ export default function CheckoutScreen() {
   }) => {
     console.log("📍 Dirección seleccionada:", addressData)
     setDeliveryAddress(addressData)
+  }
+
+  const sendOrderToChat = async (orderId: string) => {
+    try {
+      if (!state.user?.id || !state.isAuthenticated) {
+        console.error("[Checkout] Usuario no autenticado para enviar pedido por chat")
+        return false
+      }
+
+      console.log("[Checkout] Conectando al WebSocket antes de enviar pedido...")
+
+      try {
+        await chatService.connect(state.user.id, "cliente")
+        console.log("[Checkout] WebSocket conectado exitosamente")
+      } catch (connectError) {
+        console.error("[Checkout] Error conectando WebSocket:", connectError)
+        return false
+      }
+
+      // Esperar un poco para asegurar que la conexión esté lista
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Formatear el mensaje del pedido
+      const message = orderChatService.formatOrderMessage({
+        cartItems: cartData,
+        total: totalAmount,
+        deliveryAddress,
+        user: state.user,
+        orderId,
+      })
+
+      console.log("[Checkout] Enviando pedido por chat:", message)
+
+      // Enviar mensaje por el chat de ventas
+      chatService.enviarMensaje(state.user.id, "ventas", message)
+
+      // Desconectar después de enviar
+      setTimeout(() => {
+        chatService.disconnect()
+      }, 1000)
+
+      return true
+    } catch (error) {
+      console.error("[Checkout] Error enviando pedido por chat:", error)
+      return false
+    }
   }
 
   const handlePlaceOrder = async () => {
@@ -91,30 +137,15 @@ export default function CheckoutScreen() {
             if (orderResponse.success) {
               console.log("✅ Order created successfully in database")
 
-              // 2. Preparar datos del pedido para WhatsApp (incluyendo coordenadas)
-              const orderData = {
-                cartItems: cartData,
-                total: totalAmount,
-                deliveryAddress: {
-                  address: deliveryAddress.address,
-                  additionalInfo: deliveryAddress.additionalInfo,
-                  coordinates: deliveryAddress.coordinates, // Incluir coordenadas para el enlace del mapa
-                },
-                paymentMethod,
-                user: state.user,
-                orderId: orderResponse.data?.pedidos?.[0]?._id || "N/A",
-              }
+              const orderId = orderResponse.data?.pedidos?.[0]?._id || "N/A"
 
-              console.log("📍 Sending order with coordinates:", orderData.deliveryAddress.coordinates)
+              const sentToChat = await sendOrderToChat(orderId)
 
-              // 3. Enviar pedido por WhatsApp
-              const sentToWhatsApp = await whatsappService.sendOrderToWhatsApp(orderData)
-
-              if (sentToWhatsApp) {
+              if (sentToChat) {
                 setTimeout(() => {
                   Alert.alert(
                     "Pedido Creado y Enviado",
-                    "Tu pedido ha sido registrado en la base de datos y enviado por WhatsApp con la ubicación exacta. Recibirás confirmación del comercio pronto.",
+                    "Tu pedido ha sido registrado en la base de datos y enviado a través del chat. Te contactaremos pronto para confirmar.",
                     [
                       {
                         text: "OK",
@@ -124,11 +155,11 @@ export default function CheckoutScreen() {
                   )
                 }, 2000)
               } else {
-                // Si falla WhatsApp pero el pedido ya está creado
+                // Si falla el chat pero el pedido ya está creado
                 setTimeout(() => {
                   Alert.alert(
                     "Pedido Creado",
-                    "Tu pedido ha sido registrado exitosamente en la base de datos. Por favor, contacta directamente al +591 72284092 para confirmar tu pedido.",
+                    "Tu pedido ha sido registrado exitosamente en la base de datos. Por favor, abre el chat de ventas para confirmar tu pedido.",
                     [
                       {
                         text: "OK",
@@ -180,10 +211,10 @@ export default function CheckoutScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.successContainer}>
-          <Ionicons name="logo-whatsapp" size={80} color="#25D366" />
+          <Ionicons name="chatbubbles" size={80} color={Colors.light.primary} />
           <Text style={styles.successTitle}>¡Enviando Pedido!</Text>
           <Text style={styles.successText}>
-            Tu pedido se está enviando por WhatsApp con la ubicación exacta. Te redirigiremos a la aplicación.
+            Tu pedido se está enviando a través del chat. Te responderemos pronto para confirmar.
           </Text>
         </View>
       </View>
@@ -404,7 +435,7 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#4CAF50",
+    color: Colors.light.primary,
     marginTop: 16,
     marginBottom: 8,
   },

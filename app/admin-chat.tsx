@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
+import { Linking } from "react-native"
 import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { chatService } from "../src/services/chatService"
@@ -273,10 +274,26 @@ export default function AdminChatScreen() {
 
   const renderMensaje = ({ item }: { item: Mensaje }) => {
     const esAdmin = item.tipo === "admin"
+    const linkStyle = esAdmin ? styles.linkTextPropio : styles.linkTextCliente
+
     return (
       <View style={[styles.mensajeContainer, esAdmin ? styles.mensajePropio : styles.mensajeCliente]}>
         <View style={[styles.mensajeBubble, esAdmin ? styles.bubblePropio : styles.bubbleCliente]}>
-          <Text style={[styles.mensajeTexto, esAdmin && styles.mensajeTextoPropio]}>{item.contenido}</Text>
+          <Text style={[styles.mensajeTexto, esAdmin && styles.mensajeTextoPropio]}>
+            {item.contenido.split(/(https?:\/\/[^\s]+)/g).map((part, index) =>
+              part.match(/^https?:\/\//) ? (
+                <Text
+                  key={index}
+                  style={linkStyle}
+                  onPress={() => Linking.openURL(part)}
+                >
+                  {part}
+                </Text>
+              ) : (
+                <Text key={index}>{part}</Text>
+              )
+            )}
+          </Text>
           <Text style={[styles.mensajeHora, esAdmin && styles.mensajeHoraPropia]}>
             {new Date(item.timestamp).toLocaleTimeString("es-ES", {
               hour: "2-digit",
@@ -722,4 +739,16 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: "center",
   },
+  // Enlaces del admin (enviados)
+  linkTextPropio: {
+    color: '#FFEBC1', // caramelo claro para fondo azul
+    textDecorationLine: 'underline',
+    fontWeight: '600',
+  },
+  // Enlaces del cliente (recibidos)
+  linkTextCliente: {
+    color: '#8B5E3C', // marrón cálido oscuro para fondo gris
+    textDecorationLine: 'underline',
+    fontWeight: '600',
+  }
 })

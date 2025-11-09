@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native"
+import { Linking } from "react-native"
 import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { chatService } from "../src/services/chatService"
@@ -210,10 +211,26 @@ export default function ChatScreen() {
 
   const renderMensaje = ({ item }: { item: Mensaje }) => {
     const esPropio = item.tipo === "cliente"
+    const linkStyle = esPropio ? styles.linkTextPropio : styles.linkTextOtro
+
     return (
       <View style={[styles.mensajeContainer, esPropio ? styles.mensajePropio : styles.mensajeAdmin]}>
         <View style={[styles.mensajeBubble, esPropio ? styles.bubblePropio : styles.bubbleAdmin]}>
-          <Text style={[styles.mensajeTexto, esPropio && styles.mensajeTextoPropio]}>{item.contenido}</Text>
+          <Text style={[styles.mensajeTexto, esPropio && styles.mensajeTextoPropio]}>
+            {item.contenido.split(/(https?:\/\/[^\s]+)/g).map((part, index) =>
+              part.match(/^https?:\/\//) ? (
+                <Text
+                  key={index}
+                  style={linkStyle}
+                  onPress={() => Linking.openURL(part)}
+                >
+                  {part}
+                </Text>
+              ) : (
+                <Text key={index}>{part}</Text>
+              )
+            )}
+          </Text>
           <Text style={[styles.mensajeHora, esPropio && styles.mensajeHoraPropia]}>
             {new Date(item.timestamp).toLocaleTimeString("es-ES", {
               hour: "2-digit",
@@ -626,4 +643,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  // Enlaces del usuario (mensajes propios)
+  linkTextPropio: {
+    color: '#FFEBC1', // tono caramelo claro sobre fondo azul
+    textDecorationLine: 'underline',
+    fontWeight: '600',
+  },
+  // Enlaces del otro lado (mensajes recibidos)
+  linkTextOtro: {
+    color: '#8B5E3C', // marrón cálido oscuro sobre fondo gris
+    textDecorationLine: 'underline',
+    fontWeight: '600',
+  }
 })
