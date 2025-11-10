@@ -17,9 +17,10 @@ interface CartModalProps {
   cart: CartItem[];
   onClose: () => void;
   onUpdateQuantity: (item: CartItem, newQty: number) => void;
+  onRemoveItem?: (item: CartItem) => void
 }
 
-export function CartModal({ visible, cart, onClose, onUpdateQuantity }: CartModalProps) {
+export function CartModal({ visible, cart, onClose, onUpdateQuantity, onRemoveItem }: CartModalProps) {
   const items = cart.reduce((sum: number, item: CartItem) => sum + item.price * item.quantity, 0);
   const discounts = 0;
   const total = items - discounts;
@@ -34,13 +35,13 @@ export function CartModal({ visible, cart, onClose, onUpdateQuantity }: CartModa
     onClose();
     
     // Navegar a la pantalla de checkout con los datos del carrito
-    /*router.push({
+    router.push({
       pathname: '/checkout',
       params: {
         cart: JSON.stringify(cart),
         total: total.toString(),
       },
-    });*/
+    });
   };
 
   return (
@@ -91,6 +92,14 @@ export function CartModal({ visible, cart, onClose, onUpdateQuantity }: CartModa
                       <Ionicons name="add" size={18} color="#222" />
                     </TouchableOpacity>
                   </View>
+                  {onRemoveItem && (
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() => onRemoveItem(item)}
+                      >
+                        <Ionicons name="trash-outline" size={22} color="#e53935" />
+                      </TouchableOpacity>
+                  )}
                 </View>
               ))
             )}
@@ -217,6 +226,12 @@ const styles = StyleSheet.create({
   quantityText: {
     marginHorizontal: 10,
     fontSize: 16,
+  },
+    deleteButton: {
+    marginLeft: 8,
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   summary: {
     borderTopWidth: 1,

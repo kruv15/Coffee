@@ -54,12 +54,12 @@ export const validateRequired = (value: string, fieldName: string): ValidationRe
 
 export const validatePhone = (phone: string): ValidationResult => {
   const errors: string[] = [];
-  const phoneRegex = /^\d{10}$/;
+  const phoneRegex = /^\d{8}$/;
   
   if (!phone.trim()) {
     errors.push('El teléfono es requerido');
   } else if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-    errors.push('El teléfono debe tener 10 dígitos');
+    errors.push('El teléfono debe tener 8 dígitos');
   }
   
   return {
