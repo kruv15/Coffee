@@ -1,7 +1,3 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- */
-
 const tintColorLight = '#795548'; // Coffee brown
 const tintColorDark = '#D7CCC8'; // Light coffee
 

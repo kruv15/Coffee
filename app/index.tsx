@@ -13,7 +13,6 @@ import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { socialMediaService } from "../src/services/socialMediaService"
 import type { CartItem, Product } from "../src/types"
-import { debugAPI } from "../src/utils/testApi"
 
 export default function HomeScreen() {
   const { state, forceRefresh } = useAuth()
@@ -113,7 +112,6 @@ export default function HomeScreen() {
 
   // Cargar productos al montar el componente
   useEffect(() => {
-    debugAPI() // Para debug
     loadProductsFromAPI()
   }, [])
 
@@ -257,7 +255,7 @@ export default function HomeScreen() {
         />
       </TouchableOpacity>
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>Amber Infusion</Text>
+        <Text style={styles.title}>COFFEE</Text>
         {/* Iconos de redes sociales */}
         <View style={styles.socialMediaContainer}>
           <TouchableOpacity onPress={() => socialMediaService.openTikTok()} style={styles.socialButton}>
@@ -324,27 +322,19 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {renderHeader()}
+      {renderSearchBar()}
+      {renderProductStats()}
+
       <FlatList
         data={filteredProducts}
         keyExtractor={(item: Product) => item.id}
         renderItem={renderProductItem}
-        ListHeaderComponent={() => (
-          <>
-            {renderHeader()}
-            {renderSearchBar()}
-            {renderProductStats()}
-            {loading && (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={Colors.light.primary} />
-                <Text style={styles.loadingText}>Cargando productos desde la base de datos...</Text>
-              </View>
-            )}
-          </>
-        )}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         refreshing={loading}
         onRefresh={loadProductsFromAPI}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={() =>
           !loading && (
             <View style={styles.emptyContainer}>
@@ -358,6 +348,13 @@ export default function HomeScreen() {
         }
       />
 
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={styles.loadingText}>Cargando productos...</Text>
+        </View>
+      )}
+
       <ProductDetailModal
         visible={!!selectedProduct}
         product={selectedProduct}
@@ -370,12 +367,13 @@ export default function HomeScreen() {
         cart={cart}
         onClose={() => setCartVisible(false)}
         onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={(item) =>
+          setCart((prev) => prev.filter((i) => i.id !== item.id || i.pack !== item.pack))
+        }
       />
 
       <LoginModal visible={loginVisible} onClose={handleCloseAuth} onNavigateToRegister={handleNavigateToRegister} />
-
       <RegisterModal visible={registerVisible} onClose={handleCloseAuth} onNavigateToLogin={handleNavigateToLogin} />
-
       <UserProfileModal visible={userProfileVisible} onClose={() => setUserProfileVisible(false)} />
     </View>
   )

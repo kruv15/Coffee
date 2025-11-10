@@ -198,17 +198,18 @@ export default function AdminScreen() {
 
   const handleOpenSalesReport = () => {
     setDropdownVisible(false)
-    router.push("/")
+    router.push("/salesReport")
   }
 
   const handleOpenOrdersReport = () => {
     setDropdownVisible(false)
-    router.push("/")
+    router.push("/ordersReport")
   }
 
   const handleOpenAdminChat = () => {
-    router.push("/admin-chat")
-  }
+    setDropdownVisible(false);
+    router.push('/admin-chat');
+  };
 
   // Debug para verificar el estado de productos
   useEffect(() => {
@@ -223,8 +224,11 @@ export default function AdminScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Panel de Administración</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.chatButton} onPress={handleOpenAdminChat}>
-            <Ionicons name="chatbubbles" size={24} color="#fff" />
+          <TouchableOpacity 
+            style={styles.reportsButton} 
+            onPress={() => setDropdownVisible(true)}
+          >
+            <Ionicons name="bar-chart" size={24} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.addButton} onPress={handleAddNewProduct}>
             <Ionicons name="add" size={24} color="#fff" />
@@ -249,6 +253,11 @@ export default function AdminScreen() {
             <TouchableOpacity style={styles.dropdownItem} onPress={handleOpenOrdersReport}>
               <Ionicons name="receipt" size={20} color="#795548" />
               <Text style={styles.dropdownText}>Pedidos</Text>
+            </TouchableOpacity>
+            <View style={styles.dropdownSeparator} />
+            <TouchableOpacity style={styles.dropdownItem} onPress={handleOpenAdminChat}>
+              <Ionicons name="chatbubbles" size={20} color="#795548" />
+              <Text style={styles.dropdownText}>Chat de Administración</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

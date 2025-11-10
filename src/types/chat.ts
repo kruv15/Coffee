@@ -7,6 +7,7 @@ export interface Mensaje {
   contenido: string
   tipo: "cliente" | "admin"
   leido: boolean
+  archivos?: Archivo[]
   timestamp: Date | string
 }
 
@@ -51,4 +52,15 @@ export interface Conversacion {
 export interface WebSocketEvent {
   tipo: string
   [key: string]: any
+}
+
+export interface Archivo {
+  tipo: "imagen" | "video"
+  nombreOriginal: string
+  urlCloudinary: string
+  publicId: string
+  tamaño?: number
+  duracion?: number
+  anchoAlto?: string
+  subidoEn?: Date | string
 }
