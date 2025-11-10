@@ -17,10 +17,16 @@ import {
   View,
 } from "react-native"
 import { Linking } from "react-native"
+import { StatusBar } from "expo-status-bar"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { chatService } from "../src/services/chatService"
+import { SelectorArchivos } from "../src/components/SelectorArchivos"
+import { PrevisualizadorArchivos } from "../src/components/PrevisualizadorArchivos"
+import { VisorMultimedia } from "../src/components/VisorMultimedia"
 import type { Conversacion, Mensaje } from "../src/types/chat"
+import type { Archivo } from "../src/types/chat"
 
 export default function AdminChatScreen() {
   const { state } = useAuth()
@@ -32,6 +38,10 @@ export default function AdminChatScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [connected, setConnected] = useState(false)
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "ventas" | "atencion_cliente">("todos")
+  const [archivosSeleccionados, setArchivosSeleccionados] = useState<any[]>([])
+  const [archivosPrevistos, setArchivosPrevistos] = useState<any[]>([])
+  const [subiendoArchivos, setSubiendoArchivos] = useState(false)
+  const [mostrarSelectorArchivos, setMostrarSelectorArchivos] = useState(false)
   const flatListRef = useRef<FlatList>(null)
 
   // Verificar que el usuario sea admin
@@ -91,21 +101,70 @@ export default function AdminChatScreen() {
     }
   }
 
-  const handleNuevoMensaje = (event: any) => {
-    console.log("[AdminChat] Nuevo mensaje recibido")
-    if (event.mensaje) {
-      // Si el mensaje es de la conversación actual, agregarlo
-      if (
-        conversacionActual &&
-        event.mensaje.usuarioId === conversacionActual.usuarioId &&
-        event.mensaje.tipoChat === conversacionActual.tipoChat
-      ) {
-        setMensajes((prev) => [...prev, event.mensaje])
-        setTimeout(() => scrollToBottom(), 100)
-      }
+  const handleNuevoMensaje = async (event: any) => {
+    const mensaje = event.mensaje
+    console.log("[AdminChat] 📩 Nuevo mensaje recibido:", mensaje)
+    if (!mensaje) return
 
-      // Actualizar lista de conversaciones
-      cargarConversaciones()
+    // Verificar si pertenece a la conversación actual
+    const mismaConversacion =
+      conversacionActual &&
+      mensaje.tipoChat === conversacionActual.tipoChat &&
+      mensaje.usuarioId === conversacionActual.usuarioId &&
+      (conversacionActual.asuntoId ?? null) === (mensaje.asuntoId ?? null)
+
+    if (mismaConversacion) {
+      // 🔁 Buscar mensaje temporal reciente para reemplazarlo
+      setMensajes((prev) => {
+        const idxTemp = prev.findIndex(
+          (m) =>
+            m.id.startsWith("temp_") &&
+            m.tipo === "admin" &&
+            Math.abs(new Date(m.timestamp).getTime() - new Date(mensaje.timestamp).getTime()) < 10000
+        )
+
+        if (idxTemp !== -1) {
+          const copia = [...prev]
+          copia[idxTemp] = mensaje
+          return copia
+        }
+
+        // Evitar duplicados
+        const existe = prev.some((m) => m.id === mensaje.id)
+        if (existe) return prev
+        return [...prev, mensaje]
+      })
+
+      setTimeout(() => scrollToBottom(), 100)
+    } else {
+      console.log("[AdminChat] 📨 Mensaje nuevo de otra conversación o sin conversación activa")
+
+      // 🔄 Refrescar lista de conversaciones activas
+      const actualizadas = await chatService.obtenerConversacionesActivasAPI(filtroTipo)
+      setConversaciones(actualizadas)
+
+      // 🪄 Abrir automáticamente si no hay conversación seleccionada
+      const conversacionCliente = actualizadas.find(
+        (conv) =>
+          conv.usuarioId === mensaje.usuarioId &&
+          conv.tipoChat === mensaje.tipoChat &&
+          (conv.asuntoId ?? null) === (mensaje.asuntoId ?? null)
+      )
+
+      if (!conversacionActual && conversacionCliente) {
+        console.log("[AdminChat] 🔔 Abriendo conversación automáticamente:", conversacionCliente.usuario.nombre)
+        setConversacionActual(conversacionCliente)
+        chatService.solicitarHistorial(
+          conversacionCliente.usuarioId,
+          conversacionCliente.tipoChat,
+          conversacionCliente.asuntoId ?? undefined
+        )
+        chatService.marcarComoLeido(
+          conversacionCliente.usuarioId,
+          conversacionCliente.tipoChat,
+          conversacionCliente.asuntoId ?? undefined
+        )
+      }
     }
   }
 
@@ -171,42 +230,131 @@ export default function AdminChatScreen() {
   const seleccionarConversacion = (conversacion: Conversacion) => {
     setConversacionActual(conversacion)
     setMensajes([])
+    setArchivosSeleccionados([])
+    setArchivosPrevistos([])
 
     // Solicitar historial
     if (state.user?.id) {
-      chatService.solicitarHistorial(conversacion.usuarioId, conversacion.tipoChat, conversacion.asuntoId || undefined)
+      chatService.solicitarHistorial(conversacion.usuarioId, conversacion.tipoChat, conversacion.asuntoId ?? undefined)
 
       // Marcar como leído
       chatService.marcarComoLeido(conversacion.usuarioId, conversacion.tipoChat, conversacion.asuntoId || undefined)
     }
   }
 
-  const enviarMensaje = () => {
-    if (!inputText.trim() || !conversacionActual || !state.user?.id) return
+  const handleArchivosSeleccionados = async (archivosNuevos: any[]) => {
+    setArchivosSeleccionados(archivosNuevos)
+    setMostrarSelectorArchivos(false)
 
+    const previsualizaciones: any[] = []
+    for (const archivo of archivosNuevos) {
+      previsualizaciones.push({
+        uri: archivo.uri || URL.createObjectURL(archivo),
+        nombre: archivo.name,
+        tipo: archivo.type.startsWith("video") ? "video" : "imagen",
+        tamaño: archivo.size,
+      })
+    }
+    setArchivosPrevistos(previsualizaciones)
+  }
+
+  const removerArchivo = (indice: number) => {
+    setArchivosSeleccionados((prev) => prev.filter((_, i) => i !== indice))
+    setArchivosPrevistos((prev) => prev.filter((_, i) => i !== indice))
+  }
+
+  const enviarMensajeConArchivos = async () => {
+    if (!conversacionActual || (archivosSeleccionados.length === 0 && !inputText.trim())) return
+
+    // 🔹 Crear mensaje temporal visible al instante
     const mensajeTemporal: Mensaje = {
       id: `temp_${Date.now()}`,
       usuarioId: conversacionActual.usuarioId,
       tipoChat: conversacionActual.tipoChat,
       asuntoId: conversacionActual.asuntoId || null,
-      contenido: inputText.trim(),
+      contenido: inputText.trim() || "(archivo adjunto)",
       tipo: "admin",
       leido: false,
       timestamp: new Date().toISOString(),
+      archivos: archivosPrevistos.map((a) => ({
+        tipo: a.tipo,
+        urlCloudinary: a.uri, // previsualización local
+        nombreOriginal: a.nombre,
+        tamaño: a.tamaño,
+        publicId: "local_preview", // 👈 evita error de tipado
+      })),
     }
 
-    // Agregar mensaje temporal a la lista
+    // Mostrar mensaje temporal
     setMensajes((prev) => [...prev, mensajeTemporal])
     setTimeout(() => scrollToBottom(), 100)
 
-    // Enviar mensaje al servidor
-    chatService.enviarMensaje(
-      conversacionActual.usuarioId,
-      conversacionActual.tipoChat,
-      inputText.trim(),
-      conversacionActual.asuntoId || undefined,
-    )
-    setInputText("")
+    setSubiendoArchivos(true)
+
+    try {
+      const archivosSubidos: Archivo[] = []
+
+      for (const archivo of archivosSeleccionados) {
+        try {
+          const archivoSubido = await chatService.subirArchivo(archivo)
+          archivosSubidos.push(archivoSubido)
+        } catch (error) {
+          console.error("[AdminChat] Error subiendo archivo:", error)
+          Alert.alert("Error", "No se pudo subir uno de los archivos")
+          setSubiendoArchivos(false)
+          return
+        }
+      }
+
+      const contenidoValido = inputText.trim() || ""
+
+      if (archivosSubidos.length > 0 || contenidoValido) {
+        chatService.enviarMensajeConArchivos(
+          conversacionActual.usuarioId,
+          conversacionActual.tipoChat,
+          contenidoValido,
+          archivosSubidos,
+          conversacionActual.asuntoId ?? undefined
+        )
+
+        setInputText("")
+        setArchivosSeleccionados([])
+        setArchivosPrevistos([])
+      }
+    } catch (error) {
+      console.error("[AdminChat] Error enviando mensaje con archivos:", error)
+      Alert.alert("Error", "No se pudo enviar el mensaje")
+    } finally {
+      setSubiendoArchivos(false)
+    }
+  }
+
+  const enviarMensaje = () => {
+    if (archivosSeleccionados.length > 0) {
+      enviarMensajeConArchivos()
+    } else if (inputText.trim() && conversacionActual) {
+      const mensajeTemporal: Mensaje = {
+        id: `temp_${Date.now()}`,
+        usuarioId: conversacionActual.usuarioId,
+        tipoChat: conversacionActual.tipoChat,
+        asuntoId: conversacionActual.asuntoId || null,
+        contenido: inputText.trim(),
+        tipo: "admin",
+        leido: false,
+        timestamp: new Date().toISOString(),
+      }
+
+      setMensajes((prev) => [...prev, mensajeTemporal])
+      setTimeout(() => scrollToBottom(), 100)
+
+      chatService.enviarMensaje(
+        conversacionActual.usuarioId,
+        conversacionActual.tipoChat,
+        inputText.trim(),
+        conversacionActual.asuntoId || undefined,
+      )
+      setInputText("")
+    }
   }
 
   const resolverAsunto = () => {
@@ -279,21 +427,23 @@ export default function AdminChatScreen() {
     return (
       <View style={[styles.mensajeContainer, esAdmin ? styles.mensajePropio : styles.mensajeCliente]}>
         <View style={[styles.mensajeBubble, esAdmin ? styles.bubblePropio : styles.bubbleCliente]}>
-          <Text style={[styles.mensajeTexto, esAdmin && styles.mensajeTextoPropio]}>
-            {item.contenido.split(/(https?:\/\/[^\s]+)/g).map((part, index) =>
-              part.match(/^https?:\/\//) ? (
-                <Text
-                  key={index}
-                  style={linkStyle}
-                  onPress={() => Linking.openURL(part)}
-                >
-                  {part}
-                </Text>
-              ) : (
-                <Text key={index}>{part}</Text>
-              )
-            )}
-          </Text>
+          {item.archivos && item.archivos.length > 0 && <VisorMultimedia archivos={item.archivos} />}
+
+          {/* Mostrar contenido del mensaje */}
+          {item.contenido && (
+            <Text style={[styles.mensajeTexto, esAdmin && styles.mensajeTextoPropio]}>
+              {item.contenido.split(/(https?:\/\/[^\s]+)/g).map((part, index) =>
+                part.match(/^https?:\/\//) ? (
+                  <Text key={index} style={linkStyle} onPress={() => Linking.openURL(part)}>
+                    {part}
+                  </Text>
+                ) : (
+                  <Text key={index}>{part}</Text>
+                ),
+              )}
+            </Text>
+          )}
+
           <Text style={[styles.mensajeHora, esAdmin && styles.mensajeHoraPropia]}>
             {new Date(item.timestamp).toLocaleTimeString("es-ES", {
               hour: "2-digit",
@@ -308,6 +458,9 @@ export default function AdminChatScreen() {
   const renderListaConversaciones = () => (
     <View style={styles.listaContainer}>
       <View style={styles.listaHeader}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={28} color="#222" />
+        </TouchableOpacity>
         <Text style={styles.listaTitle}>Conversaciones Activas</Text>
         <View style={styles.connectionStatus}>
           <View
@@ -412,7 +565,28 @@ export default function AdminChatScreen() {
         )}
       />
 
+      {mostrarSelectorArchivos && (
+        <SelectorArchivos onArchivosSeleccionados={handleArchivosSeleccionados} deshabilitado={subiendoArchivos} />
+      )}
+
+      {archivosPrevistos.length > 0 && (
+        <PrevisualizadorArchivos
+          archivos={archivosPrevistos}
+          onRemover={removerArchivo}
+          onEnviar={enviarMensajeConArchivos}
+          enviando={subiendoArchivos}
+        />
+      )}
+
       <View style={styles.inputContainer}>
+        <TouchableOpacity
+          style={[styles.botonAttach, subiendoArchivos && styles.botonDeshabilitado]}
+          onPress={() => setMostrarSelectorArchivos(!mostrarSelectorArchivos)}
+          disabled={subiendoArchivos}
+        >
+          <Ionicons name="attach" size={20} color={Colors.light.primary} />
+        </TouchableOpacity>
+
         <TextInput
           style={styles.input}
           placeholder="Escribe un mensaje..."
@@ -422,11 +596,15 @@ export default function AdminChatScreen() {
           maxLength={500}
         />
         <TouchableOpacity
-          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+          style={[
+            styles.sendButton,
+            !inputText.trim() && archivosSeleccionados.length === 0 && styles.sendButtonDisabled,
+            subiendoArchivos && styles.sendButtonDisabled,
+          ]}
           onPress={enviarMensaje}
-          disabled={!inputText.trim()}
+          disabled={(!inputText.trim() && archivosSeleccionados.length === 0) || subiendoArchivos}
         >
-          <Ionicons name="send" size={24} color="#fff" />
+          <Ionicons name={archivosSeleccionados.length > 0 ? "cloud-upload" : "send"} size={24} color="#fff" />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -444,17 +622,14 @@ export default function AdminChatScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={28} color="#222" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Chat Administrativo</Text>
-        <View style={{ width: 28 }} />
-      </View>
-
-      <View style={styles.content}>{!conversacionActual ? renderListaConversaciones() : renderChat()}</View>
-    </View>
+    <>
+      <StatusBar backgroundColor={Colors.light.primary} style="light" />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.content}>{!conversacionActual ? renderListaConversaciones() : renderChat()}</View>
+        </View>
+      </SafeAreaView>
+    </>
   )
 }
 
@@ -462,7 +637,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
-    paddingTop: 48,
+    paddingTop: Platform.OS === "ios" ? 48 : 0,
   },
   header: {
     flexDirection: "row",
@@ -483,6 +658,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listaHeader: {
+    flexDirection: "row",
+    alignItems: "center",        // 🔹 Centra verticalmente
+    justifyContent: "space-between",   
     padding: 16,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
@@ -683,11 +861,24 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: "row",
-    padding: 12,
+    paddingHorizontal: 10,
+    paddingVertical: Platform.OS === "android" ? 6 : 10, // ✅ más compacto en Android
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
-    alignItems: "flex-end",
+    alignItems: "center",
+    gap: 6,
+  },
+  botonAttach: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  botonDeshabilitado: {
+    opacity: 0.5,
   },
   input: {
     flex: 1,
@@ -697,7 +888,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     maxHeight: 100,
-    marginRight: 8,
   },
   sendButton: {
     backgroundColor: Colors.light.primary,
@@ -739,16 +929,18 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: "center",
   },
-  // Enlaces del admin (enviados)
   linkTextPropio: {
-    color: '#FFEBC1', // caramelo claro para fondo azul
-    textDecorationLine: 'underline',
-    fontWeight: '600',
+    color: "#FFEBC1",
+    textDecorationLine: "underline",
+    fontWeight: "600",
   },
-  // Enlaces del cliente (recibidos)
   linkTextCliente: {
-    color: '#8B5E3C', // marrón cálido oscuro para fondo gris
-    textDecorationLine: 'underline',
-    fontWeight: '600',
+    color: "#8B5E3C",
+    textDecorationLine: "underline",
+    fontWeight: "600",
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
   }
 })

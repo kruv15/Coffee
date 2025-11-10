@@ -4,6 +4,8 @@ import { Ionicons } from "@expo/vector-icons"
 import { router, useLocalSearchParams } from "expo-router"
 import React, { useState } from "react"
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { StatusBar } from "expo-status-bar"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { MapAddressSelector } from "../src/components/MapAddressSelector"
 import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
@@ -222,107 +224,112 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={28} color={Colors.light.text} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Finalizar Pedido</Text>
-        <View style={{ width: 28 }} />
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Información del cliente */}
-        {state.isAuthenticated && state.user && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Información del Cliente</Text>
-            <View style={styles.userInfo}>
-              <Text style={styles.userName}>
-                {state.user.name} {state.user.lastName || ""}
-              </Text>
-              <Text style={styles.userEmail}>{state.user.email}</Text>
-              {state.user.phone && <Text style={styles.userPhone}>{state.user.phone}</Text>}
-            </View>
-          </View>
-        )}
-
-        {/* Resumen del pedido */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Resumen del Pedido</Text>
-          {cartData.map((item: CartItem, index: number) => (
-            <View key={index} style={styles.orderItem}>
-              <Image source={{ uri: item.image }} style={styles.itemImage} />
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemInfo}>
-                  {item.pack} • Cantidad: {item.quantity}
-                </Text>
-                <Text style={styles.itemPrice}>Bs{(item.price * item.quantity).toFixed(2)}</Text>
-              </View>
-            </View>
-          ))}
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total a Pagar:</Text>
-            <Text style={styles.totalAmount}>Bs{totalAmount.toFixed(2)}</Text>
-          </View>
-        </View>
-
-        {/* Dirección de entrega con mapa */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dirección de Entrega</Text>
-
-          {deliveryAddress.address ? (
-            <View style={styles.selectedAddressContainer}>
-              <View style={styles.addressHeader}>
-                <Ionicons name="location" size={20} color={Colors.light.primary} />
-                <Text style={styles.selectedAddressTitle}>Dirección seleccionada:</Text>
-              </View>
-              <Text style={styles.selectedAddressText}>{deliveryAddress.address}</Text>
-
-              {/* Mostrar coordenadas si están disponibles */}
-              {deliveryAddress.coordinates.latitude !== 0 && deliveryAddress.coordinates.longitude !== 0 && (
-                <View style={styles.coordinatesContainer}>
-                  <Ionicons name="navigate" size={16} color={Colors.light.success} />
-                  <Text style={styles.coordinatesText}>
-                    Ubicación GPS: {deliveryAddress.coordinates.latitude.toFixed(6)},{" "}
-                    {deliveryAddress.coordinates.longitude.toFixed(6)}
-                  </Text>
-                </View>
-              )}
-
-              {deliveryAddress.additionalInfo && (
-                <Text style={styles.additionalInfoText}>Información adicional: {deliveryAddress.additionalInfo}</Text>
-              )}
-
-              <TouchableOpacity style={styles.changeAddressButton} onPress={() => setMapVisible(true)}>
-                <Ionicons name="pencil" size={16} color={Colors.light.primary} />
-                <Text style={styles.changeAddressText}>Cambiar dirección</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity style={styles.selectAddressButton} onPress={() => setMapVisible(true)}>
-              <Ionicons name="map" size={24} color="#fff" />
-              <Text style={styles.selectAddressText}>Seleccionar en el mapa</Text>
+    <>
+      <StatusBar backgroundColor={Colors.light.primary} style="light" />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={28} color={Colors.light.text} />
             </TouchableOpacity>
-          )}
+            <Text style={styles.title}>Finalizar Pedido</Text>
+            <View style={{ width: 28 }} />
+          </View>
+
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {/* Información del cliente */}
+            {state.isAuthenticated && state.user && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Información del Cliente</Text>
+                <View style={styles.userInfo}>
+                  <Text style={styles.userName}>
+                    {state.user.name} {state.user.lastName || ""}
+                  </Text>
+                  <Text style={styles.userEmail}>{state.user.email}</Text>
+                  {state.user.phone && <Text style={styles.userPhone}>{state.user.phone}</Text>}
+                </View>
+              </View>
+            )}
+
+            {/* Resumen del pedido */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Resumen del Pedido</Text>
+              {cartData.map((item: CartItem, index: number) => (
+                <View key={index} style={styles.orderItem}>
+                  <Image source={{ uri: item.image }} style={styles.itemImage} />
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemInfo}>
+                      {item.pack} • Cantidad: {item.quantity}
+                    </Text>
+                    <Text style={styles.itemPrice}>Bs{(item.price * item.quantity).toFixed(2)}</Text>
+                  </View>
+                </View>
+              ))}
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total a Pagar:</Text>
+                <Text style={styles.totalAmount}>Bs{totalAmount.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            {/* Dirección de entrega con mapa */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Dirección de Entrega</Text>
+
+              {deliveryAddress.address ? (
+                <View style={styles.selectedAddressContainer}>
+                  <View style={styles.addressHeader}>
+                    <Ionicons name="location" size={20} color={Colors.light.primary} />
+                    <Text style={styles.selectedAddressTitle}>Dirección seleccionada:</Text>
+                  </View>
+                  <Text style={styles.selectedAddressText}>{deliveryAddress.address}</Text>
+
+                  {/* Mostrar coordenadas si están disponibles */}
+                  {deliveryAddress.coordinates.latitude !== 0 && deliveryAddress.coordinates.longitude !== 0 && (
+                    <View style={styles.coordinatesContainer}>
+                      <Ionicons name="navigate" size={16} color={Colors.light.success} />
+                      <Text style={styles.coordinatesText}>
+                        Ubicación GPS: {deliveryAddress.coordinates.latitude.toFixed(6)},{" "}
+                        {deliveryAddress.coordinates.longitude.toFixed(6)}
+                      </Text>
+                    </View>
+                  )}
+
+                  {deliveryAddress.additionalInfo && (
+                    <Text style={styles.additionalInfoText}>Información adicional: {deliveryAddress.additionalInfo}</Text>
+                  )}
+
+                  <TouchableOpacity style={styles.changeAddressButton} onPress={() => setMapVisible(true)}>
+                    <Ionicons name="pencil" size={16} color={Colors.light.primary} />
+                    <Text style={styles.changeAddressText}>Cambiar dirección</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.selectAddressButton} onPress={() => setMapVisible(true)}>
+                  <Ionicons name="map" size={24} color="#fff" />
+                  <Text style={styles.selectAddressText}>Seleccionar en el mapa</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </ScrollView>
+
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.placeOrderButton} onPress={handlePlaceOrder}>
+              <Text style={styles.placeOrderText}>Realizar Pedido - Bs{totalAmount.toFixed(2)}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Map Address Selector Modal */}
+          <MapAddressSelector
+            visible={mapVisible}
+            onClose={() => setMapVisible(false)}
+            onAddressSelect={handleAddressSelect}
+            initialAddress={deliveryAddress.address}
+            initialAdditionalInfo={deliveryAddress.additionalInfo}
+          />
         </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.placeOrderButton} onPress={handlePlaceOrder}>
-          <Text style={styles.placeOrderText}>Realizar Pedido - Bs{totalAmount.toFixed(2)}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Map Address Selector Modal */}
-      <MapAddressSelector
-        visible={mapVisible}
-        onClose={() => setMapVisible(false)}
-        onAddressSelect={handleAddressSelect}
-        initialAddress={deliveryAddress.address}
-        initialAdditionalInfo={deliveryAddress.additionalInfo}
-      />
-    </View>
+      </SafeAreaView>
+    </>
   )
 }
 
@@ -537,4 +544,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 4,
   },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  }
 })

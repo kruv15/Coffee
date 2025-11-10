@@ -11,8 +11,10 @@ import {
   Text,
   TouchableOpacity,
   View,
-  StatusBar,
 } from "react-native"
+import { StatusBar } from "expo-status-bar"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { orderService } from "../src/services/orderService"
 
@@ -137,111 +139,114 @@ export default function SalesReportScreen() {
   )
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#5D4037" />
-      {/* Barra superior */}
-      <View style={styles.appBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.appBarTitle}>Reportes de Ventas</Text>
-        <TouchableOpacity onPress={loadSalesData}>
-          <Ionicons name="refresh" size={22} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#795548" />
-          <Text style={styles.loadingText}>Cargando datos reales...</Text>
+    <>
+    <StatusBar backgroundColor='#5D4037' style="light" />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.appBar}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.appBarTitle}>Reportes de Ventas</Text>
+          <TouchableOpacity onPress={loadSalesData}>
+            <Ionicons name="refresh" size={22} color="#fff" />
+          </TouchableOpacity>
         </View>
-      ) : (
-        <ScrollView style={styles.content}>
-          {/* Selector de rango */}
-          <View style={styles.dateRangeContainer}>
-            {[
-              { key: "1dia", label: "1 día" },
-              { key: "7dias", label: "7 días" },
-              { key: "30dias", label: "30 días" },
-              { key: "90dias", label: "90 días" },
-            ].map((opt) => (
-              <TouchableOpacity
-                key={opt.key}
-                style={[
-                  styles.dateButton,
-                  dateRange === opt.key && styles.activeDateButton,
-                ]}
-                onPress={() => setDateRange(opt.key)}
-              >
-                <Text
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#795548" />
+            <Text style={styles.loadingText}>Cargando datos reales...</Text>
+          </View>
+        ) : (
+          <ScrollView style={styles.content}>
+            {/* Selector de rango */}
+            <View style={styles.dateRangeContainer}>
+              {[
+                { key: "1dia", label: "1 día" },
+                { key: "7dias", label: "7 días" },
+                { key: "30dias", label: "30 días" },
+                { key: "90dias", label: "90 días" },
+              ].map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
                   style={[
-                    styles.dateButtonText,
-                    dateRange === opt.key && styles.activeDateButtonText,
+                    styles.dateButton,
+                    dateRange === opt.key && styles.activeDateButton,
                   ]}
+                  onPress={() => setDateRange(opt.key)}
                 >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <Text
+                    style={[
+                      styles.dateButtonText,
+                      dateRange === opt.key && styles.activeDateButtonText,
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          {/* Tarjetas resumen */}
-          <View style={styles.summaryContainer}>
-            {renderSummaryCard(
-              "Ventas Totales",
-              `Bs${salesData?.totalSales.toFixed(2)}`,
-              "cash",
-              "#4CAF50"
-            )}
-            {renderSummaryCard(
-              "Pedidos Totales",
-              `${salesData?.totalOrders}`,
-              "receipt",
-              "#2196F3"
-            )}
-            {renderSummaryCard(
-              "Promedio por Pedido",
-              `Bs${salesData?.averageOrderValue.toFixed(2)}`,
-              "trending-up",
-              "#FF9800"
-            )}
-          </View>
+            {/* Tarjetas resumen */}
+            <View style={styles.summaryContainer}>
+              {renderSummaryCard(
+                "Ventas Totales",
+                `Bs${salesData?.totalSales.toFixed(2)}`,
+                "cash",
+                "#4CAF50"
+              )}
+              {renderSummaryCard(
+                "Pedidos Totales",
+                `${salesData?.totalOrders}`,
+                "receipt",
+                "#2196F3"
+              )}
+              {renderSummaryCard(
+                "Promedio por Pedido",
+                `Bs${salesData?.averageOrderValue.toFixed(2)}`,
+                "trending-up",
+                "#FF9800"
+              )}
+            </View>
 
-          {/* Productos más vendidos */}
-          {salesData?.topProducts?.length ? (
-            <View style={styles.section}>
-              {salesData.topProducts.map((p, i) => (
-                <View key={i} style={styles.productItem}>
-                  <View style={styles.productInfo}>
-                    <Text style={styles.productName}>{p.name}</Text>
-                    <Text style={styles.productStats}>
-                      {p.quantity} unidades • Bs{p.revenue.toFixed(2)}
-                    </Text>
+            {/* Productos más vendidos */}
+            {salesData?.topProducts?.length ? (
+              <View style={styles.section}>
+                {salesData.topProducts.map((p, i) => (
+                  <View key={i} style={styles.productItem}>
+                    <View style={styles.productInfo}>
+                      <Text style={styles.productName}>{p.name}</Text>
+                      <Text style={styles.productStats}>
+                        {p.quantity} unidades • Bs{p.revenue.toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={styles.rankBadge}>
+                      <Text style={styles.rankText}>{i + 1}</Text>
+                    </View>
                   </View>
-                  <View style={styles.rankBadge}>
-                    <Text style={styles.rankText}>{i + 1}</Text>
+                ))}
+              </View>
+            ) : null}
+
+            {/* Ventas diarias */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Ventas Diarias</Text>
+              {salesData?.dailySales?.map((d, i) => (
+                <View key={i} style={styles.dayItem}>
+                  <Text style={styles.dayDate}>{d.date}</Text>
+                  <View style={styles.dayStats}>
+                    <Text style={styles.daySales}>Bs{d.sales.toFixed(2)}</Text>
+                    <Text style={styles.dayOrders}>{d.orders} pedidos</Text>
                   </View>
                 </View>
               ))}
             </View>
-          ) : null}
-
-          {/* Ventas diarias */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ventas Diarias</Text>
-            {salesData?.dailySales?.map((d, i) => (
-              <View key={i} style={styles.dayItem}>
-                <Text style={styles.dayDate}>{d.date}</Text>
-                <View style={styles.dayStats}>
-                  <Text style={styles.daySales}>Bs{d.sales.toFixed(2)}</Text>
-                  <Text style={styles.dayOrders}>{d.orders} pedidos</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-      )}
-    </View>
+          </ScrollView>
+        )}
+      </View>
+    </SafeAreaView>
+    </>
   )
 }
 
@@ -253,7 +258,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#5D4037",
     paddingHorizontal: 16,
-    paddingTop: 48,
+    paddingTop: 24,
     paddingBottom: 14,
     elevation: 5,
     shadowColor: "#000",
@@ -320,4 +325,9 @@ const styles = StyleSheet.create({
   dayStats: { alignItems: "flex-end" },
   daySales: { color: "#4CAF50", fontWeight: "bold" },
   dayOrders: { color: "#777", fontSize: 12 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  }
 })
+

@@ -17,10 +17,16 @@ import {
   View,
 } from "react-native"
 import { Linking } from "react-native"
+import { StatusBar } from "expo-status-bar"
+import { SafeAreaView } from "react-native-safe-area-context"
 import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { chatService } from "../src/services/chatService"
+import { SelectorArchivos } from "../src/components/SelectorArchivos"
+import { PrevisualizadorArchivos } from "../src/components/PrevisualizadorArchivos"
+import { VisorMultimedia } from "../src/components/VisorMultimedia"
 import type { Asunto, Mensaje } from "../src/types/chat"
+import type { Archivo } from "../src/types/chat"
 
 export default function ChatScreen() {
   const { state } = useAuth()
@@ -33,11 +39,15 @@ export default function ChatScreen() {
   const [showAsuntoModal, setShowAsuntoModal] = useState(false)
   const [asuntoTitulo, setAsuntoTitulo] = useState("")
   const [asuntoDescripcion, setAsuntoDescripcion] = useState("")
+  const [archivosSeleccionados, setArchivosSeleccionados] = useState<any[]>([])
+  const [archivosPrevistos, setArchivosPrevistos] = useState<any[]>([])
+  const [subiendoArchivos, setSubiendoArchivos] = useState(false)
+  const [mostrarSelectorArchivos, setMostrarSelectorArchivos] = useState(false)
   const flatListRef = useRef<FlatList>(null)
 
   // Conectar al WebSocket cuando se selecciona tipo de chat
   useEffect(() => {
-    if (tipoChat && state.user?.id) {
+    if (tipoChat && state.user?.id && !connected) {
       conectarChat()
     }
 
@@ -102,24 +112,60 @@ export default function ChatScreen() {
   }
 
   const handleNuevoMensaje = (event: any) => {
-    console.log("[Chat] Nuevo mensaje recibido")
-    if (event.mensaje) {
-      setMensajes((prev) => [...prev, event.mensaje])
-      setTimeout(() => scrollToBottom(), 100)
-    }
+    const mensaje = event.mensaje
+    console.log("[Chat] 📩 Nuevo mensaje recibido:", mensaje)
+    if (!mensaje) return
+
+    setMensajes((prev) => {
+      // Buscar si existe un mensaje temporal cercano en tiempo
+      const idxTemp = prev.findIndex(
+        (m) =>
+          m.id.startsWith("temp_") &&
+          m.tipo === mensaje.tipo &&
+          m.usuarioId === mensaje.usuarioId &&
+          Math.abs(new Date(m.timestamp).getTime() - new Date(mensaje.timestamp).getTime()) < 10000
+      )
+
+      if (idxTemp !== -1) {
+        const copia = [...prev]
+        copia[idxTemp] = mensaje // reemplazamos el temporal con el mensaje real (con URLs Cloudinary)
+        return copia
+      }
+
+      // Si no hay temporal, agregarlo al final
+      const yaExiste = prev.some((m) => m.id === mensaje.id)
+      if (yaExiste) return prev
+      return [...prev, mensaje]
+    })
+
+    setTimeout(() => scrollToBottom(), 100)
   }
 
   const handleConfirmacionMensaje = (event: any) => {
-    console.log("[Chat] Mensaje confirmado:", event.mensaje)
-    if (event.mensaje) {
-      setMensajes((prev) => {
-        // Verificar que no exista ya el mensaje para evitar duplicados
-        const existe = prev.some((m) => m.id === event.mensaje.id)
-        if (existe) return prev
-        return [...prev, event.mensaje]
-      })
-      setTimeout(() => scrollToBottom(), 100)
+    const mensaje = event.mensaje
+    console.log("[Chat] ✅ Confirmación mensaje:", mensaje)
+
+    // Si el backend no envía el mensaje completo, lo ignoramos y esperamos el evento "nuevo_mensaje"
+    if (!mensaje) {
+      console.log("[Chat] ⚠️ confirmacion_mensaje vacío, esperando nuevo_mensaje")
+      return
     }
+
+    setMensajes((prev) => {
+      const idxTemp = prev.findIndex(
+        (m) =>
+          m.id.startsWith("temp_") &&
+          m.tipo === mensaje.tipo &&
+          m.usuarioId === mensaje.usuarioId &&
+          Math.abs(new Date(m.timestamp).getTime() - new Date(mensaje.timestamp).getTime()) < 10000
+      )
+      if (idxTemp !== -1) {
+        const copia = [...prev]
+        copia[idxTemp] = mensaje
+        return copia
+      }
+      return [...prev, mensaje]
+    })
   }
 
   const handleConfirmacionAsunto = (event: any) => {
@@ -156,29 +202,129 @@ export default function ChatScreen() {
     }
   }
 
-  const enviarMensaje = () => {
-    if (!inputText.trim() || !state.user?.id || !tipoChat) return
+  const handleArchivosSeleccionados = async (archivosNuevos: any[]) => {
+    setArchivosSeleccionados(archivosNuevos)
+    setMostrarSelectorArchivos(false)
 
-    const asuntoId = tipoChat === "atencion_cliente" ? asuntoActual?.id : undefined
+    // Preparar previsualizaciones
+    const previsualizaciones: any[] = []
+    for (const archivo of archivosNuevos) {
+      previsualizaciones.push({
+        uri: archivo.uri || URL.createObjectURL(archivo),
+        nombre: archivo.name,
+        tipo: archivo.type.startsWith("video") ? "video" : "imagen",
+        tamaño: archivo.size,
+      })
+    }
+    setArchivosPrevistos(previsualizaciones)
+  }
 
-    const mensajeTemporal: Mensaje = {
-      id: `temp_${Date.now()}`,
-      usuarioId: state.user.id,
-      tipoChat,
-      asuntoId: asuntoId || null,
-      contenido: inputText.trim(),
-      tipo: "cliente",
-      leido: false,
-      timestamp: new Date().toISOString(),
+  const removerArchivo = (indice: number) => {
+    setArchivosSeleccionados((prev) => prev.filter((_, i) => i !== indice))
+    setArchivosPrevistos((prev) => prev.filter((_, i) => i !== indice))
+  }
+
+  const enviarMensajeConArchivos = async () => {
+  if (!state.user?.id || !tipoChat || (archivosSeleccionados.length === 0 && !inputText.trim())) {
+    return
+  }
+
+  // 🔹 Crear mensaje temporal visible al instante
+  const mensajeTemporal: Mensaje = {
+    id: `temp_${Date.now()}`,
+    usuarioId: state.user.id,
+    tipoChat,
+    asuntoId: tipoChat === "atencion_cliente" ? asuntoActual?.id || null : null,
+    contenido: inputText.trim() || "(archivo adjunto)",
+    tipo: "cliente",
+    leido: false,
+    timestamp: new Date().toISOString(),
+    archivos: archivosPrevistos.map((a) => ({
+      tipo: a.tipo,
+      urlCloudinary: a.uri, // usamos la URI local de preview
+      nombreOriginal: a.nombre,
+      tamaño: a.tamaño,
+      publicId: "local_preview",
+    })),
+  }
+
+  // Mostrarlo inmediatamente en el chat
+  setMensajes((prev) => [...prev, mensajeTemporal])
+  setTimeout(() => scrollToBottom(), 100)
+
+  setSubiendoArchivos(true)
+
+  try {
+    const archivosSubidos: Archivo[] = []
+
+    for (const archivo of archivosSeleccionados) {
+      try {
+        const archivoSubido = await chatService.subirArchivo(archivo)
+        archivosSubidos.push(archivoSubido)
+      } catch (error) {
+        console.error("[Chat] Error subiendo archivo:", error)
+        Alert.alert("Error", "No se pudo subir uno de los archivos. Intenta nuevamente.")
+        setSubiendoArchivos(false)
+        return
+      }
     }
 
-    // Agregar mensaje temporal a la lista
-    setMensajes((prev) => [...prev, mensajeTemporal])
-    setTimeout(() => scrollToBottom(), 100)
+    // 🔹 Solo incluir asuntoId si existe (no enviar null ni undefined)
+    const asuntoIdValido =
+      tipoChat === "atencion_cliente" && asuntoActual?.id ? asuntoActual.id : undefined
 
-    // Enviar mensaje al servidor
-    chatService.enviarMensaje(state.user.id, tipoChat, inputText.trim(), asuntoId)
-    setInputText("")
+    // 🔹 Evitar mandar contenido vacío si solo hay archivos
+    const contenidoValido = inputText.trim() || ""
+
+    // 🔹 Enviar solo si hay algo que mandar
+    if (archivosSubidos.length > 0 || contenidoValido) {
+      chatService.enviarMensajeConArchivos(
+        state.user.id,
+        tipoChat,
+        contenidoValido,
+        archivosSubidos,
+        asuntoIdValido
+      )
+
+      // 🔹 Limpiar estados
+      setInputText("")
+      setArchivosSeleccionados([])
+      setArchivosPrevistos([])
+    }
+  } catch (error) {
+    console.error("[Chat] Error enviando mensaje con archivos:", error)
+    Alert.alert("Error", "No se pudo enviar el mensaje")
+  } finally {
+    setSubiendoArchivos(false)
+  }
+}
+
+
+  const enviarMensaje = () => {
+    if (archivosSeleccionados.length > 0) {
+      enviarMensajeConArchivos()
+    } else if (inputText.trim() && state.user?.id && tipoChat) {
+      const asuntoId = tipoChat === "atencion_cliente" ? asuntoActual?.id : undefined
+
+      const mensajeTemporal: Mensaje = {
+        id: `temp_${Date.now()}`,
+        usuarioId: state.user.id,
+        tipoChat,
+        asuntoId: asuntoId || null,
+        contenido: inputText.trim(),
+        tipo: "cliente",
+        leido: false,
+        timestamp: new Date().toISOString(),
+      }
+
+      // Agregar mensaje temporal a la lista
+      setMensajes((prev) => [...prev, mensajeTemporal])
+      setTimeout(() => scrollToBottom(), 100)
+
+      // Enviar mensaje al servidor
+      chatService.enviarMensaje(state.user.id, tipoChat, inputText.trim(), asuntoId)
+      setInputText("")
+    }
   }
 
   const crearAsunto = () => {
@@ -216,21 +362,23 @@ export default function ChatScreen() {
     return (
       <View style={[styles.mensajeContainer, esPropio ? styles.mensajePropio : styles.mensajeAdmin]}>
         <View style={[styles.mensajeBubble, esPropio ? styles.bubblePropio : styles.bubbleAdmin]}>
-          <Text style={[styles.mensajeTexto, esPropio && styles.mensajeTextoPropio]}>
-            {item.contenido.split(/(https?:\/\/[^\s]+)/g).map((part, index) =>
-              part.match(/^https?:\/\//) ? (
-                <Text
-                  key={index}
-                  style={linkStyle}
-                  onPress={() => Linking.openURL(part)}
-                >
-                  {part}
-                </Text>
-              ) : (
-                <Text key={index}>{part}</Text>
-              )
-            )}
-          </Text>
+          {item.archivos && item.archivos.length > 0 && <VisorMultimedia archivos={item.archivos} />}
+
+          {/* Mostrar contenido del mensaje */}
+          {item.contenido && (
+            <Text style={[styles.mensajeTexto, esPropio && styles.mensajeTextoPropio]}>
+              {item.contenido.split(/(https?:\/\/[^\s]+)/g).map((part, index) =>
+                part.match(/^https?:\/\//) ? (
+                  <Text key={index} style={linkStyle} onPress={() => Linking.openURL(part)}>
+                    {part}
+                  </Text>
+                ) : (
+                  <Text key={index}>{part}</Text>
+                ),
+              )}
+            </Text>
+          )}
+
           <Text style={[styles.mensajeHora, esPropio && styles.mensajeHoraPropia]}>
             {new Date(item.timestamp).toLocaleTimeString("es-ES", {
               hour: "2-digit",
@@ -245,7 +393,7 @@ export default function ChatScreen() {
   const renderChat = () => (
     <KeyboardAvoidingView
       style={styles.chatContainer}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       <View style={styles.chatHeader}>
@@ -289,7 +437,28 @@ export default function ChatScreen() {
             )}
           />
 
+          {mostrarSelectorArchivos && (
+            <SelectorArchivos onArchivosSeleccionados={handleArchivosSeleccionados} deshabilitado={subiendoArchivos} />
+          )}
+
+          {archivosPrevistos.length > 0 && (
+            <PrevisualizadorArchivos
+              archivos={archivosPrevistos}
+              onRemover={removerArchivo}
+              onEnviar={enviarMensajeConArchivos}
+              enviando={subiendoArchivos}
+            />
+          )}
+
           <View style={styles.inputContainer}>
+            <TouchableOpacity
+              style={[styles.botonAttach, subiendoArchivos && styles.botonDeshabilitado]}
+              onPress={() => setMostrarSelectorArchivos(!mostrarSelectorArchivos)}
+              disabled={subiendoArchivos}
+            >
+              <Ionicons name="attach" size={20} color={Colors.light.primary} />
+            </TouchableOpacity>
+
             <TextInput
               style={styles.input}
               placeholder="Escribe un mensaje..."
@@ -299,11 +468,15 @@ export default function ChatScreen() {
               maxLength={500}
             />
             <TouchableOpacity
-              style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+              style={[
+                styles.sendButton,
+                !inputText.trim() && archivosSeleccionados.length === 0 && styles.sendButtonDisabled,
+                subiendoArchivos && styles.sendButtonDisabled,
+              ]}
               onPress={enviarMensaje}
-              disabled={!inputText.trim()}
+              disabled={(!inputText.trim() && archivosSeleccionados.length === 0) || subiendoArchivos}
             >
-              <Ionicons name="send" size={24} color="#fff" />
+              <Ionicons name={archivosSeleccionados.length > 0 ? "cloud-upload" : "send"} size={24} color="#fff" />
             </TouchableOpacity>
           </View>
         </>
@@ -370,10 +543,15 @@ export default function ChatScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {!tipoChat ? renderTipoChatSelector() : renderChat()}
-      {renderAsuntoModal()}
-    </View>
+    <>
+      <StatusBar backgroundColor={Colors.light.primary} style="light" />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          {!tipoChat ? renderTipoChatSelector() : renderChat()}
+          {renderAsuntoModal()}
+        </View>
+      </SafeAreaView>
+    </>
   )
 }
 
@@ -381,7 +559,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
-    paddingTop: 48,
+    paddingTop: Platform.OS === "ios" ? 48 : 0,
   },
   selectorContainer: {
     flex: 1,
@@ -517,11 +695,24 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: "row",
-    padding: 12,
+    paddingHorizontal: 10,
+    paddingVertical: Platform.OS === "android" ? 6 : 10, // ✅ más compacto en Android
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",
-    alignItems: "flex-end",
+    alignItems: "center",
+    gap: 6,
+  },
+  botonAttach: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  botonDeshabilitado: {
+    opacity: 0.5,
   },
   input: {
     flex: 1,
@@ -531,7 +722,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     maxHeight: 100,
-    marginRight: 8,
   },
   sendButton: {
     backgroundColor: Colors.light.primary,
@@ -643,16 +833,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  // Enlaces del usuario (mensajes propios)
   linkTextPropio: {
-    color: '#FFEBC1', // tono caramelo claro sobre fondo azul
-    textDecorationLine: 'underline',
-    fontWeight: '600',
+    color: "#FFEBC1",
+    textDecorationLine: "underline",
+    fontWeight: "600",
   },
-  // Enlaces del otro lado (mensajes recibidos)
   linkTextOtro: {
-    color: '#8B5E3C', // marrón cálido oscuro sobre fondo gris
-    textDecorationLine: 'underline',
-    fontWeight: '600',
+    color: "#8B5E3C",
+    textDecorationLine: "underline",
+    fontWeight: "600",
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
   }
 })

@@ -38,8 +38,8 @@ export default function RootLayout() {
           <Stack.Screen name="admin-chat" options={{ headerShown: false }} />
           <Stack.Screen name="ordersReport" options={{ headerShown: false }} />
           <Stack.Screen name="salesReport" options={{ headerShown: false }} />
+          <Stack.Screen name="checkout" options={{ headerShown: false }} />
         </Stack>
-        <StatusBar style="auto" />
       </ThemeProvider>
     </AuthProvider>
   )
