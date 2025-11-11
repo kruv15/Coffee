@@ -1,3 +1,10 @@
+export type Category =
+  | "cafe-grano"
+  | "cafe-molido"
+  | "capsulas"
+  | "instantaneo"
+  | string
+
 export interface Product {
   id: string
   name: string
@@ -5,7 +12,7 @@ export interface Product {
   image: string
   description?: string
   stock?: number
-  category?: string
+  category?: Category
 }
 
 export interface CartItem extends Product {

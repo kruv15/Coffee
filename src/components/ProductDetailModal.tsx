@@ -19,21 +19,43 @@ interface ProductDetailModalProps {
 }
 
 export function ProductDetailModal({ visible, product, onClose, onAddToCart }: ProductDetailModalProps) {
-  const [selectedPack, setSelectedPack] = useState<string>('50g');
+  const [selectedPack, setSelectedPack] = useState<string>('250g');
   const [quantity, setQuantity] = useState<number>(1);
 
   useEffect(() => {
     if (visible) {
-      setSelectedPack('50g');
+      setSelectedPack('250g');
       setQuantity(1);
     }
   }, [product, visible]);
 
   if (!product || !visible) return null;
 
-  const packs: Pack[] = [
-    { label: '50g', price: product.price.toFixed(2) }
+  // Etiquetas legibles para categorías
+  const CATEGORY_LABELS: Record<string, string> = {
+    'cafe-grano': 'Café-Grano',
+    'cafe-molido': 'Café-Molido',
+    'capsulas': 'Capsulas',
+    'instantaneo': 'Café-Instantaneo',
+  };
+
+  // Paquetes disponibles con sus precios relativos
+  const PACK_OPTIONS: { label: string; grams: number }[] = [
+    { label: '50g', grams: 50 },
+    { label: '250g', grams: 250 },
+    { label: '500g', grams: 500 },
+    { label: '1kg', grams: 1000 },
   ];
+
+  // Asumimos que product.price corresponde al precio para 250g
+  const basePackGrams = 250;
+  const priceNumber = Number(product.price) || 0;
+  const pricePerGram = priceNumber && basePackGrams ? priceNumber / basePackGrams : 0;
+
+  const packs: Pack[] = PACK_OPTIONS.map((p) => ({
+    label: p.label,
+    price: (pricePerGram ? pricePerGram * p.grams : priceNumber).toFixed(2),
+  }));
 
   const getPrice = (): string => {
     const pack = packs.find((p: Pack) => p.label === selectedPack);
@@ -75,7 +97,7 @@ export function ProductDetailModal({ visible, product, onClose, onAddToCart }: P
             </View>
           </View>
 
-          <Text style={styles.category}>Granos de Café</Text>
+          <Text style={styles.category}>{CATEGORY_LABELS[product.category || ''] || product.category || 'Café'}</Text>
 
           <Text style={styles.packLabel}>Tamaño del Paquete</Text>
           <View style={styles.packContainer}>
@@ -92,7 +114,7 @@ export function ProductDetailModal({ visible, product, onClose, onAddToCart }: P
                   styles.packButtonText,
                   selectedPack === pack.label && styles.packButtonTextSelected
                 ]}>
-                  {pack.label}
+                  {pack.label} - Bs{Number(pack.price).toFixed(2)}
                 </Text>
               </Pressable>
             ))}
