@@ -34,8 +34,10 @@ interface AddProductModalProps {
 }
 
 const CATEGORIES = [
-  { value: 'cafe', label: 'Café' },
-  // Solo café por ahora
+  { value: 'café-grano', label: 'Café-Grano' },
+  { value: 'café-molido', label: 'Café-Molido' },
+  { value: 'capsulas', label: 'Capsulas' },
+  { value: 'Café-Instantaneo', label: 'Café-Instantaneo' },
 ];
 
 export function AddProductModal({
@@ -118,9 +120,10 @@ export function AddProductModal({
       newErrors.imagen = imageValidation.errors[0];
     }
 
-    // Categoría siempre debe ser "cafe"
-    if (formData.categoria !== 'cafe') {
-      setFormData(prev => ({ ...prev, categoria: 'cafe' }));
+    // Validar que la categoría sea una de las permitidas
+    const allowedCategories = CATEGORIES.map(c => c.value);
+    if (!allowedCategories.includes(formData.categoria)) {
+      newErrors.categoria = 'Categoría inválida';
     }
 
     setErrors(newErrors);
@@ -143,7 +146,7 @@ export function AddProductModal({
           descripcionProd: formData.descripcionProd.trim(),
           precioProd: parseFloat(formData.precioProd),
           stock: parseInt(formData.stock),
-          categoria: 'cafe', // FORZAR SIEMPRE A "cafe"
+          categoria: formData.categoria, // usar categoría seleccionada
           imagen: formData.imagen.trim(),
         };
 
