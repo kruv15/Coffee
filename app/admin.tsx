@@ -177,7 +177,7 @@ export default function AdminScreen() {
   const handleAddProduct = (productData: Omit<Product, "id">) => {
     const newProduct: Product = {
       ...productData,
-      category: "cafe",
+      category: productData.category || "cafe", // respetar categoría enviada por el modal
       id: Date.now().toString(),
     }
     setProducts((prev) => [...prev, newProduct])
@@ -188,7 +188,7 @@ export default function AdminScreen() {
   const handleUpdateProduct = (updatedProduct: Product) => {
     const product = {
       ...updatedProduct,
-      category: "cafe",
+      category: updatedProduct.category || "cafe", // respetar categoría enviada por el modal
     }
     setProducts((prev) => prev.map((p) => (p.id === product.id ? product : p)))
     setEditingProduct(null)
