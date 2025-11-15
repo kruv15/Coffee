@@ -285,12 +285,12 @@ export default function HomeScreen() {
         </View>
       </View>
       <View style={styles.headerRight}>
-        {state.isAuthenticated && (
+        {state.isAuthenticated && state.user?.role !== "admin" && (
           <TouchableOpacity onPress={handleGoToOrders} style={styles.ordersButton}>
             <Ionicons name="receipt-outline" size={24} color="#fff" />
           </TouchableOpacity>
         )}
-        {state.isAuthenticated && (
+        {state.isAuthenticated && state.user?.role !== "admin" && (
           <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
             <Ionicons name="chatbubbles" size={24} color="#fff" />
           </TouchableOpacity>
