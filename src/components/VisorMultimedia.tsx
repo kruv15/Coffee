@@ -52,11 +52,21 @@ export function VisorMultimedia({ archivos }: VisorMultimediaProps) {
       {/* Modal para imagen ampliada */}
       <Modal visible={!!imagenAmpliada} transparent animationType="fade" onRequestClose={() => setImagenAmpliada(null)}>
         <View style={styles.modalContenedor}>
-          <TouchableOpacity style={styles.fondoModal} onPress={() => setImagenAmpliada(null)}>
-            {imagenAmpliada && (
-              <Image source={{ uri: imagenAmpliada }} style={styles.imagenAmpliada} onError={() => {}} />
-            )}
-          </TouchableOpacity>
+          {imagenAmpliada && (
+            <TouchableOpacity style={styles.contenedorImagenAmpliada} onPress={() => setImagenAmpliada(null)} activeOpacity={1}>
+              <Image 
+                source={{ uri: imagenAmpliada }} 
+                style={styles.imagenAmpliada}
+                resizeMode="contain"
+                onError={(e) => {
+                  console.log("[v0] Error cargando imagen:", e.nativeEvent.error)
+                }}
+                onLoad={() => {
+                  console.log("[v0] Imagen ampliada cargada exitosamente")
+                }}
+              />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.botonCerrar} onPress={() => setImagenAmpliada(null)}>
             <Ionicons name="close" size={32} color="#fff" />
           </TouchableOpacity>
@@ -128,18 +138,20 @@ const styles = StyleSheet.create({
   },
   modalContenedor: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
+    backgroundColor: "rgba(0,0,0,0.95)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 0,
   },
-  fondoModal: {
+  contenedorImagenAmpliada: {
     flex: 1,
+    width: "100%",
     justifyContent: "center",
     alignItems: "center",
   },
   imagenAmpliada: {
-    width: "90%",
-    height: "80%",
+    width: "100%",
+    height: "100%",
     resizeMode: "contain",
   },
   botonCerrar: {

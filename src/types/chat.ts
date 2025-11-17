@@ -1,4 +1,3 @@
-// Tipos para el sistema de chat
 export interface Mensaje {
   id: string
   usuarioId: string
@@ -43,13 +42,14 @@ export interface Conversacion {
     contenido: string
     tipo: "cliente" | "admin"
     timestamp: Date | string
+    archivos?: Archivo[]
   } | null
   mensajesNoLeidos: number
   totalMensajes: number
   activo: boolean
 }
 
-export interface WebSocketEvent {
+export interface EventoWebSocket {
   tipo: string
   [key: string]: any
 }
@@ -63,4 +63,20 @@ export interface Archivo {
   duracion?: number
   anchoAlto?: string
   subidoEn?: Date | string
+}
+
+export interface EstadoChat {
+  mensajes: Mensaje[]
+  cargando: boolean
+  conectado: boolean
+  error?: string
+}
+
+export interface EstadoAdmin {
+  conversaciones: Conversacion[]
+  conversacionActual: Conversacion | null
+  mensajes: Mensaje[]
+  cargando: boolean
+  conectado: boolean
+  error?: string
 }
