@@ -21,406 +21,559 @@ import { StatusBar } from "expo-status-bar"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
-import { chatService } from "../src/services/chatService"
+import { useChatConexion } from "../src/hooks/useChatConexion"
+import { useMensajesTiempo } from "../src/hooks/useMensajesTiempo"
+import { useArchivosSubida } from "../src/hooks/useArchivosSubida"
+import { servicioAPIChat } from "../src/services/api-chat-servicio"
+import { servicioWebSocket } from "../src/services/websocket-servicio"
 import { SelectorArchivos } from "../src/components/SelectorArchivos"
 import { PrevisualizadorArchivos } from "../src/components/PrevisualizadorArchivos"
 import { VisorMultimedia } from "../src/components/VisorMultimedia"
 import type { Conversacion, Mensaje } from "../src/types/chat"
-import type { Archivo } from "../src/types/chat"
 
 export default function AdminChatScreen() {
   const { state } = useAuth()
   const [conversaciones, setConversaciones] = useState<Conversacion[]>([])
   const [conversacionActual, setConversacionActual] = useState<Conversacion | null>(null)
-  const [mensajes, setMensajes] = useState<Mensaje[]>([])
-  const [inputText, setInputText] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
-  const [connected, setConnected] = useState(false)
-  const [filtroTipo, setFiltroTipo] = useState<"todos" | "ventas" | "atencion_cliente">("todos")
-  const [archivosSeleccionados, setArchivosSeleccionados] = useState<any[]>([])
-  const [archivosPrevistos, setArchivosPrevistos] = useState<any[]>([])
-  const [subiendoArchivos, setSubiendoArchivos] = useState(false)
+  const [inputTexto, setInputTexto] = useState("")
   const [mostrarSelectorArchivos, setMostrarSelectorArchivos] = useState(false)
+  const [actualizando, setActualizando] = useState(false)
+  const [tipoFiltro, setTipoFiltro] = useState<"todos" | "ventas" | "atencion_cliente">("todos")
   const flatListRef = useRef<FlatList>(null)
 
-  // Verificar que el usuario sea admin
+  // Custom hooks
+  const { conectado, cargando, error, registrarManejador, desregistrarManejador } = useChatConexion({
+    usuarioId: state.user?.id || "",
+    tipoUsuario: "admin",
+    enHabilitado: !!state.isAuthenticated && state.user?.role === "admin",
+  })
+
+  const { mensajes, agregarMensajeLocal, reemplazarMensajeLocal, establecerMensajes, limpiarMensajes } =
+    useMensajesTiempo()
+
+  const {
+    archivosPreview,
+    archivosSeleccionados,
+    subiendo,
+    error: errorArchivos,
+    agregarArchivos,
+    removerArchivo,
+    subirArchivos,
+    limpiar: limpiarArchivos,
+  } = useArchivosSubida()
+
+  // Verificar que sea admin
   useEffect(() => {
     if (state.isAuthenticated && state.user?.role !== "admin") {
-      Alert.alert("Acceso Denegado", "Solo los administradores pueden acceder al chat", [
+      Alert.alert("Acceso Denegado", "Solo los administradores pueden acceder", [
         { text: "OK", onPress: () => router.back() },
       ])
     }
   }, [state.isAuthenticated, state.user?.role])
 
-  // Conectar al WebSocket
+  // Registrar manejadores de eventos
   useEffect(() => {
-    if (state.user?.id && state.user?.role === "admin") {
-      conectarChat()
-    }
+    if (!conectado) return
+
+    registrarManejador("conversaciones_activas", manejarConversacionesActivas)
+    registrarManejador("nuevo_mensaje", manejarNuevoMensaje)
+    registrarManejador("nuevo_asunto", manejarNuevoAsunto)
+    registrarManejador("historial", manejarHistorial)
+    registrarManejador("confirmacion_mensaje", manejarConfirmacionMensaje)
+    registrarManejador("error", manejarError)
+
+    // Solicitar conversaciones activas al conectar
+    servicioWebSocket.solicitarConversacionesActivas(tipoFiltro)
 
     return () => {
-      if (connected) {
-        chatService.disconnect()
+      desregistrarManejador("conversaciones_activas")
+      desregistrarManejador("nuevo_mensaje")
+      desregistrarManejador("nuevo_asunto")
+      desregistrarManejador("historial")
+      desregistrarManejador("confirmacion_mensaje")
+      desregistrarManejador("error")
+    }
+  }, [conectado, registrarManejador, desregistrarManejador, tipoFiltro])
+
+  const manejarConversacionesActivas = (evento: any) => {
+    console.log("[AdminChat] Conversaciones recibidas:", evento.conversaciones?.length)
+    if (evento.conversaciones) {
+      if (tipoFiltro === "todos") {
+        setConversaciones((previas) => {
+          // Evitar duplicados combinando por ID único (usuarioId + tipoChat + asuntoId)
+          const mapConversaciones = new Map<string, Conversacion>()
+          
+          previas.forEach((conv) => {
+            const clave = `${conv.usuarioId}_${conv.tipoChat}_${conv.asuntoId || "null"}`
+            mapConversaciones.set(clave, conv)
+          })
+          
+          evento.conversaciones.forEach((conv: Conversacion) => {
+            const clave = `${conv.usuarioId}_${conv.tipoChat}_${conv.asuntoId || "null"}`
+            mapConversaciones.set(clave, conv)
+          })
+          
+          return Array.from(mapConversaciones.values())
+        })
+      } else {
+        setConversaciones(evento.conversaciones)
       }
     }
-  }, [state.user?.id, state.user?.role])
-
-  const conectarChat = async () => {
-    if (!state.user?.id) return
-
-    setLoading(true)
-
-    try {
-      await chatService.connect(state.user.id, "admin")
-      setConnected(true)
-
-      // Solicitar conversaciones activas
-      chatService.solicitarConversacionesActivas(filtroTipo)
-
-      // Registrar handlers
-      chatService.on("conversaciones_activas", handleConversacionesActivas)
-      chatService.on("nuevo_mensaje", handleNuevoMensaje)
-      chatService.on("nuevo_asunto", handleNuevoAsunto)
-      chatService.on("historial", handleHistorial)
-      chatService.on("confirmacion_mensaje", handleConfirmacionMensaje)
-      chatService.on("error", handleError)
-    } catch (error) {
-      console.error("[AdminChat] Error conectando:", error)
-      Alert.alert("Error", "No se pudo conectar al chat")
-      setConnected(false)
-    } finally {
-      setLoading(false)
-    }
   }
 
-  const handleConversacionesActivas = (event: any) => {
-    console.log("[AdminChat] Conversaciones activas recibidas:", event.conversaciones?.length)
-    if (event.conversaciones) {
-      setConversaciones(event.conversaciones)
-    }
-  }
+  const manejarNuevoMensaje = async (evento: any) => {
+    const mensaje = evento.mensaje
+    console.log("[AdminChat] Nuevo mensaje recibido")
 
-  const handleNuevoMensaje = async (event: any) => {
-    const mensaje = event.mensaje
-    console.log("[AdminChat] 📩 Nuevo mensaje recibido:", mensaje)
     if (!mensaje) return
 
-    // Verificar si pertenece a la conversación actual
-    const mismaConversacion =
+    // Si pertenece a la conversación actual, agregarlo
+    const perteneceAConversacionActual =
       conversacionActual &&
       mensaje.tipoChat === conversacionActual.tipoChat &&
       mensaje.usuarioId === conversacionActual.usuarioId &&
       (conversacionActual.asuntoId ?? null) === (mensaje.asuntoId ?? null)
 
-    if (mismaConversacion) {
-      // 🔁 Buscar mensaje temporal reciente para reemplazarlo
-      setMensajes((prev) => {
-        const idxTemp = prev.findIndex(
-          (m) =>
-            m.id.startsWith("temp_") &&
-            m.tipo === "admin" &&
-            Math.abs(new Date(m.timestamp).getTime() - new Date(mensaje.timestamp).getTime()) < 10000
-        )
+    if (perteneceAConversacionActual) {
+      const idTemporal = mensajes.find(
+        (m) =>
+          m.id.startsWith("temp_") &&
+          Math.abs(new Date(m.timestamp).getTime() - new Date(mensaje.timestamp).getTime()) < 10000,
+      )?.id
 
-        if (idxTemp !== -1) {
-          const copia = [...prev]
-          copia[idxTemp] = mensaje
-          return copia
-        }
+      if (idTemporal) {
+        reemplazarMensajeLocal(idTemporal, mensaje)
+      } else {
+        agregarMensajeLocal(mensaje)
+      }
 
-        // Evitar duplicados
-        const existe = prev.some((m) => m.id === mensaje.id)
-        if (existe) return prev
-        return [...prev, mensaje]
-      })
-
-      setTimeout(() => scrollToBottom(), 100)
+      desplazarAlFinal()
     } else {
-      console.log("[AdminChat] 📨 Mensaje nuevo de otra conversación o sin conversación activa")
+      console.log("[AdminChat] Mensaje de otra conversación, actualizando lista")
 
-      // 🔄 Refrescar lista de conversaciones activas
-      const actualizadas = await chatService.obtenerConversacionesActivasAPI(filtroTipo)
-      setConversaciones(actualizadas)
+      // Refrescar conversaciones activas
+      const nuevasConversaciones = await servicioAPIChat.obtenerConversacionesActivas(tipoFiltro)
+      setConversaciones(nuevasConversaciones)
 
-      // 🪄 Abrir automáticamente si no hay conversación seleccionada
-      const conversacionCliente = actualizadas.find(
-        (conv) =>
-          conv.usuarioId === mensaje.usuarioId &&
-          conv.tipoChat === mensaje.tipoChat &&
-          (conv.asuntoId ?? null) === (mensaje.asuntoId ?? null)
-      )
-
-      if (!conversacionActual && conversacionCliente) {
-        console.log("[AdminChat] 🔔 Abriendo conversación automáticamente:", conversacionCliente.usuario.nombre)
-        setConversacionActual(conversacionCliente)
-        chatService.solicitarHistorial(
-          conversacionCliente.usuarioId,
-          conversacionCliente.tipoChat,
-          conversacionCliente.asuntoId ?? undefined
+      // Abrir automáticamente si no hay conversación seleccionada
+      if (!conversacionActual) {
+        const conversacionDelCliente = nuevasConversaciones.find(
+          (conv) =>
+            conv.usuarioId === mensaje.usuarioId &&
+            conv.tipoChat === mensaje.tipoChat &&
+            (conv.asuntoId ?? null) === (mensaje.asuntoId ?? null),
         )
-        chatService.marcarComoLeido(
-          conversacionCliente.usuarioId,
-          conversacionCliente.tipoChat,
-          conversacionCliente.asuntoId ?? undefined
-        )
+
+        if (conversacionDelCliente) {
+          console.log("[AdminChat] Abriendo conversación automáticamente")
+          seleccionarConversacion(conversacionDelCliente)
+        }
       }
     }
   }
 
-  const handleNuevoAsunto = (event: any) => {
-    console.log("[AdminChat] Nuevo asunto recibido")
-    Alert.alert("Nuevo Asunto", `Se ha creado un nuevo asunto: ${event.asunto?.titulo}`)
+  const manejarNuevoAsunto = (evento: any) => {
+    console.log("[AdminChat] Nuevo asunto creado")
+    Alert.alert("Nuevo Asunto", `Nuevo: ${evento.asunto?.titulo}`)
     cargarConversaciones()
   }
 
-  const handleHistorial = (event: any) => {
-    console.log("[AdminChat] Historial recibido:", event.mensajes?.length)
-    if (event.mensajes) {
-      setMensajes(event.mensajes)
-      setTimeout(() => scrollToBottom(), 100)
+  const manejarHistorial = (evento: any) => {
+    console.log("[AdminChat] Historial recibido:", evento.mensajes?.length)
+    if (evento.mensajes) {
+      establecerMensajes(evento.mensajes)
+      desplazarAlFinal()
     }
   }
 
-  const handleConfirmacionMensaje = (event: any) => {
-    console.log("[AdminChat] Mensaje confirmado:", event.mensaje)
-    if (event.mensaje && conversacionActual) {
-      // Verificar que el mensaje pertenece a la conversación actual
-      if (
-        event.mensaje.usuarioId === conversacionActual.usuarioId &&
-        event.mensaje.tipoChat === conversacionActual.tipoChat
-      ) {
-        setMensajes((prev) => {
-          // Verificar que no exista ya el mensaje para evitar duplicados
-          const existe = prev.some((m) => m.id === event.mensaje.id)
-          if (existe) return prev
-          return [...prev, event.mensaje]
-        })
-        setTimeout(() => scrollToBottom(), 100)
+  const manejarConfirmacionMensaje = (evento: any) => {
+    console.log("[AdminChat] Mensaje confirmado")
+    // El evento nuevo_mensaje manejará la actualización
+  }
+
+  const manejarError = (evento: any) => {
+    console.error("[AdminChat] Error:", evento.mensaje)
+    Alert.alert("Error", evento.mensaje)
+  }
+
+  const desplazarAlFinal = () => {
+    setTimeout(() => {
+      if (flatListRef.current && mensajes.length > 0) {
+        flatListRef.current.scrollToEnd({ animated: true })
       }
-    }
-  }
-
-  const handleError = (event: any) => {
-    console.error("[AdminChat] Error:", event.mensaje)
-    Alert.alert("Error", event.mensaje)
-  }
-
-  const scrollToBottom = () => {
-    if (flatListRef.current && mensajes.length > 0) {
-      flatListRef.current.scrollToEnd({ animated: true })
-    }
+    }, 100)
   }
 
   const cargarConversaciones = async () => {
     try {
-      const conversacionesData = await chatService.obtenerConversacionesActivasAPI(filtroTipo)
+      const conversacionesData = await servicioAPIChat.obtenerConversacionesActivas(tipoFiltro)
       setConversaciones(conversacionesData)
     } catch (error) {
       console.error("[AdminChat] Error cargando conversaciones:", error)
     }
   }
 
-  const onRefresh = async () => {
-    setRefreshing(true)
+  const actualizarConversaciones = async () => {
+    setActualizando(true)
     await cargarConversaciones()
-    setRefreshing(false)
+    setActualizando(false)
   }
 
   const seleccionarConversacion = (conversacion: Conversacion) => {
     setConversacionActual(conversacion)
-    setMensajes([])
-    setArchivosSeleccionados([])
-    setArchivosPrevistos([])
+    limpiarMensajes()
+    limpiarArchivos()
+    setInputTexto("")
 
     // Solicitar historial
-    if (state.user?.id) {
-      chatService.solicitarHistorial(conversacion.usuarioId, conversacion.tipoChat, conversacion.asuntoId ?? undefined)
+    servicioWebSocket.solicitarHistorial(
+      conversacion.usuarioId,
+      conversacion.tipoChat,
+      conversacion.asuntoId ?? undefined,
+    )
 
-      // Marcar como leído
-      chatService.marcarComoLeido(conversacion.usuarioId, conversacion.tipoChat, conversacion.asuntoId || undefined)
-    }
+    // Marcar como leído
+    servicioWebSocket.marcarComoLeido(conversacion.usuarioId, conversacion.tipoChat, conversacion.asuntoId || null)
   }
 
-  const handleArchivosSeleccionados = async (archivosNuevos: any[]) => {
-    setArchivosSeleccionados(archivosNuevos)
-    setMostrarSelectorArchivos(false)
+  const enviarMensajeSimple = () => {
+    if (!inputTexto.trim() || !conversacionActual) return
 
-    const previsualizaciones: any[] = []
-    for (const archivo of archivosNuevos) {
-      previsualizaciones.push({
-        uri: archivo.uri || URL.createObjectURL(archivo),
-        nombre: archivo.name,
-        tipo: archivo.type.startsWith("video") ? "video" : "imagen",
-        tamaño: archivo.size,
-      })
-    }
-    setArchivosPrevistos(previsualizaciones)
-  }
-
-  const removerArchivo = (indice: number) => {
-    setArchivosSeleccionados((prev) => prev.filter((_, i) => i !== indice))
-    setArchivosPrevistos((prev) => prev.filter((_, i) => i !== indice))
-  }
-
-  const enviarMensajeConArchivos = async () => {
-    if (!conversacionActual || (archivosSeleccionados.length === 0 && !inputText.trim())) return
-
-    // 🔹 Crear mensaje temporal visible al instante
     const mensajeTemporal: Mensaje = {
       id: `temp_${Date.now()}`,
       usuarioId: conversacionActual.usuarioId,
       tipoChat: conversacionActual.tipoChat,
       asuntoId: conversacionActual.asuntoId || null,
-      contenido: inputText.trim() || "(archivo adjunto)",
+      contenido: inputTexto.trim(),
       tipo: "admin",
       leido: false,
       timestamp: new Date().toISOString(),
-      archivos: archivosPrevistos.map((a) => ({
-        tipo: a.tipo,
-        urlCloudinary: a.uri, // previsualización local
-        nombreOriginal: a.nombre,
-        tamaño: a.tamaño,
-        publicId: "local_preview", // 👈 evita error de tipado
-      })),
     }
 
-    // Mostrar mensaje temporal
-    setMensajes((prev) => [...prev, mensajeTemporal])
-    setTimeout(() => scrollToBottom(), 100)
+    agregarMensajeLocal(mensajeTemporal)
+    desplazarAlFinal()
 
-    setSubiendoArchivos(true)
+    servicioWebSocket.enviarMensaje(
+      conversacionActual.usuarioId,
+      conversacionActual.tipoChat,
+      inputTexto.trim(),
+      conversacionActual.asuntoId || undefined,
+    )
+
+    setInputTexto("")
+  }
+
+  const enviarMensajeConArchivosHandler = async () => {
+    if (!conversacionActual || (archivosSeleccionados.length === 0 && !inputTexto.trim())) {
+      return
+    }
+
+    // Subir archivos primero ANTES de crear el mensaje temporal
+    const idMensajeTemp = `temp_${Date.now()}`
 
     try {
-      const archivosSubidos: Archivo[] = []
-
-      for (const archivo of archivosSeleccionados) {
-        try {
-          const archivoSubido = await chatService.subirArchivo(archivo)
-          archivosSubidos.push(archivoSubido)
-        } catch (error) {
-          console.error("[AdminChat] Error subiendo archivo:", error)
-          Alert.alert("Error", "No se pudo subir uno de los archivos")
-          setSubiendoArchivos(false)
-          return
-        }
+      // Subir archivos primero ANTES de crear el mensaje temporal
+      const archivosSubidos = await subirArchivos()
+      if (!archivosSubidos) {
+        Alert.alert("Error", errorArchivos || "No se pudieron subir los archivos")
+        return
       }
 
-      const contenidoValido = inputText.trim() || ""
+      // Ahora crear el mensaje temporal con archivos reales subidos
+      const mensajeTemporal: Mensaje = {
+        id: idMensajeTemp,
+        usuarioId: conversacionActual.usuarioId,
+        tipoChat: conversacionActual.tipoChat,
+        asuntoId: conversacionActual.asuntoId || null,
+        contenido: inputTexto.trim() || "",
+        tipo: "admin",
+        leido: false,
+        timestamp: new Date().toISOString(),
+        // Usar archivos ya subidos con urlCloudinary correcta
+        archivos: archivosSubidos,
+      }
 
-      if (archivosSubidos.length > 0 || contenidoValido) {
-        chatService.enviarMensajeConArchivos(
+      agregarMensajeLocal(mensajeTemporal)
+      desplazarAlFinal()
+
+      // Enviar mensaje con archivos subidos correctamente
+      if (archivosSubidos.length > 0 || inputTexto.trim()) {
+        servicioWebSocket.enviarMensajeConArchivos(
           conversacionActual.usuarioId,
           conversacionActual.tipoChat,
-          contenidoValido,
+          inputTexto.trim() || "",
           archivosSubidos,
-          conversacionActual.asuntoId ?? undefined
+          conversacionActual.asuntoId || undefined,
         )
 
-        setInputText("")
-        setArchivosSeleccionados([])
-        setArchivosPrevistos([])
+        setInputTexto("")
+        limpiarArchivos()
       }
     } catch (error) {
       console.error("[AdminChat] Error enviando mensaje con archivos:", error)
-      Alert.alert("Error", "No se pudo enviar el mensaje")
-    } finally {
-      setSubiendoArchivos(false)
+      Alert.alert("Error", "Hubo un problema al enviar el mensaje")
     }
   }
 
   const enviarMensaje = () => {
     if (archivosSeleccionados.length > 0) {
-      enviarMensajeConArchivos()
-    } else if (inputText.trim() && conversacionActual) {
-      const mensajeTemporal: Mensaje = {
-        id: `temp_${Date.now()}`,
-        usuarioId: conversacionActual.usuarioId,
-        tipoChat: conversacionActual.tipoChat,
-        asuntoId: conversacionActual.asuntoId || null,
-        contenido: inputText.trim(),
-        tipo: "admin",
-        leido: false,
-        timestamp: new Date().toISOString(),
-      }
-
-      setMensajes((prev) => [...prev, mensajeTemporal])
-      setTimeout(() => scrollToBottom(), 100)
-
-      chatService.enviarMensaje(
-        conversacionActual.usuarioId,
-        conversacionActual.tipoChat,
-        inputText.trim(),
-        conversacionActual.asuntoId || undefined,
-      )
-      setInputText("")
+      enviarMensajeConArchivosHandler()
+    } else {
+      enviarMensajeSimple()
     }
   }
 
   const resolverAsunto = () => {
-    if (!conversacionActual || !conversacionActual.asuntoId || !state.user?.id) return
+    if (!conversacionActual || !conversacionActual.asuntoId) return
 
     Alert.alert("Resolver Asunto", "¿Estás seguro de que quieres marcar este asunto como resuelto?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Resolver",
         onPress: () => {
-          chatService.resolverAsunto(conversacionActual.usuarioId, conversacionActual.asuntoId!)
+          servicioWebSocket.resolverAsunto(conversacionActual.usuarioId, conversacionActual.asuntoId!)
           setConversacionActual(null)
-          setMensajes([])
+          limpiarMensajes()
           cargarConversaciones()
         },
       },
     ])
   }
 
-  const renderConversacion = ({ item }: { item: Conversacion }) => (
-    <TouchableOpacity
-      style={[
-        styles.conversacionItem,
-        conversacionActual?.usuarioId === item.usuarioId &&
-          conversacionActual?.tipoChat === item.tipoChat &&
-          styles.conversacionItemActiva,
-      ]}
-      onPress={() => seleccionarConversacion(item)}
-    >
-      <View style={styles.conversacionAvatar}>
-        <Ionicons name={item.tipoChat === "ventas" ? "cart" : "help-circle"} size={24} color={Colors.light.primary} />
-      </View>
-      <View style={styles.conversacionInfo}>
-        <View style={styles.conversacionHeader}>
-          <Text style={styles.conversacionNombre} numberOfLines={1}>
-            {item.usuario.nombre}
-          </Text>
-          {item.ultimoMensaje && (
-            <Text style={styles.conversacionHora}>
-              {new Date(item.ultimoMensaje.timestamp).toLocaleTimeString("es-ES", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </Text>
-          )}
+  if (!state.isAuthenticated || state.user?.role !== "admin") {
+    return (
+      <View style={styles.container}>
+        <View style={styles.notAuthContainer}>
+          <Ionicons name="lock-closed" size={64} color="#ccc" />
+          <Text style={styles.notAuthText}>Acceso solo para administradores</Text>
         </View>
-        <Text style={styles.conversacionTipo}>
-          {item.tipoChat === "ventas" ? "Ventas" : "Atención al Cliente"}
-          {item.asunto && ` - ${item.asunto.titulo}`}
-        </Text>
-        {item.ultimoMensaje && (
-          <Text style={styles.conversacionUltimoMensaje} numberOfLines={1}>
-            {item.ultimoMensaje.tipo === "admin" ? "Tú: " : ""}
-            {item.ultimoMensaje.contenido}
-          </Text>
-        )}
-        {item.mensajesNoLeidos > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{item.mensajesNoLeidos}</Text>
-          </View>
-        )}
       </View>
-    </TouchableOpacity>
+    )
+  }
+
+  return (
+    <>
+      <StatusBar backgroundColor={Colors.light.primary} style="light" />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          {!conversacionActual ? renderListaConversaciones() : renderChat()}
+        </View>
+      </SafeAreaView>
+    </>
   )
 
-  const renderMensaje = ({ item }: { item: Mensaje }) => {
+  function renderListaConversaciones() {
+    return (
+      <View style={styles.listaContainer}>
+        <View style={styles.listaHeader}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={28} color="#222" />
+          </TouchableOpacity>
+          <Text style={styles.listaTitle}>Conversaciones Activas</Text>
+          <View style={styles.connectionStatus}>
+            <View
+              style={[
+                styles.connectionDot,
+                conectado ? styles.connectionDotConnected : styles.connectionDotDisconnected,
+              ]}
+            />
+            <Text style={styles.connectionText}>{conectado ? "Conectado" : "Desconectado"}</Text>
+          </View>
+        </View>
+
+        <View style={styles.filtrosContainer}>
+          <TouchableOpacity
+            style={[styles.filtroButton, tipoFiltro === "todos" && styles.filtroButtonActivo]}
+            onPress={() => {
+              setTipoFiltro("todos")
+              servicioWebSocket.solicitarConversacionesActivas("todos")
+            }}
+          >
+            <Text style={[styles.filtroButtonText, tipoFiltro === "todos" && styles.filtroButtonTextActivo]}>
+              Todos
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filtroButton, tipoFiltro === "ventas" && styles.filtroButtonActivo]}
+            onPress={() => {
+              setTipoFiltro("ventas")
+              servicioWebSocket.solicitarConversacionesActivas("ventas")
+            }}
+          >
+            <Text style={[styles.filtroButtonText, tipoFiltro === "ventas" && styles.filtroButtonTextActivo]}>
+              Ventas
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filtroButton, tipoFiltro === "atencion_cliente" && styles.filtroButtonActivo]}
+            onPress={() => {
+              setTipoFiltro("atencion_cliente")
+              servicioWebSocket.solicitarConversacionesActivas("atencion_cliente")
+            }}
+          >
+            <Text style={[styles.filtroButtonText, tipoFiltro === "atencion_cliente" && styles.filtroButtonTextActivo]}>
+              Atención
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {cargando ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.light.primary} />
+          </View>
+        ) : (
+          <FlatList
+            data={conversaciones}
+            keyExtractor={(item, index) => `${item.usuarioId}_${item.tipoChat}_${item.asuntoId || "null"}_${index}`}
+            renderItem={({ item }) => renderConversacion(item)}
+            contentContainerStyle={styles.conversacionesList}
+            refreshControl={<RefreshControl refreshing={actualizando} onRefresh={actualizarConversaciones} />}
+            ListEmptyComponent={() => (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="chatbubbles-outline" size={64} color="#ccc" />
+                <Text style={styles.emptyText}>No hay conversaciones activas</Text>
+              </View>
+            )}
+          />
+        )}
+      </View>
+    )
+  }
+
+  function renderConversacion(item: Conversacion) {
+    const esActiva =
+      conversacionActual?.usuarioId === item.usuarioId &&
+      conversacionActual?.tipoChat === item.tipoChat
+
+    return (
+      <TouchableOpacity
+        style={[styles.conversacionItem, esActiva && styles.conversacionItemActiva]}
+        onPress={() => seleccionarConversacion(item)}
+      >
+        <View style={styles.conversacionAvatar}>
+          <Ionicons name={item.tipoChat === "ventas" ? "cart" : "help-circle"} size={24} color={Colors.light.primary} />
+        </View>
+        <View style={styles.conversacionInfo}>
+          <View style={styles.conversacionHeader}>
+            <Text style={styles.conversacionNombre} numberOfLines={1}>
+              {item.usuario.nombre}
+            </Text>
+            {item.ultimoMensaje && (
+              <Text style={styles.conversacionHora}>
+                {new Date(item.ultimoMensaje.timestamp).toLocaleTimeString("es-ES", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </Text>
+            )}
+          </View>
+          <Text style={styles.conversacionTipo}>
+            {item.tipoChat === "ventas" ? "Ventas" : "Atención al Cliente"}
+            {item.asunto && ` - ${item.asunto.titulo}`}
+          </Text>
+          {item.ultimoMensaje && (
+            <Text style={styles.conversacionUltimoMensaje} numberOfLines={1}>
+              {item.ultimoMensaje.tipo === "admin" ? "Tú: " : ""}
+              {item.ultimoMensaje.contenido}
+            </Text>
+          )}
+          {item.mensajesNoLeidos > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{item.mensajesNoLeidos}</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    )
+  }
+
+  function renderChat() {
+    return (
+      <KeyboardAvoidingView
+        style={styles.chatContainer}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        <View style={styles.chatHeader}>
+          <TouchableOpacity onPress={() => setConversacionActual(null)}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.chatHeaderInfo}>
+            <Text style={styles.chatHeaderTitle}>{conversacionActual?.usuario.nombre}</Text>
+            <Text style={styles.chatHeaderSubtitle}>
+              {conversacionActual?.usuario.email}
+              {conversacionActual?.asunto && ` - ${conversacionActual.asunto.titulo}`}
+            </Text>
+          </View>
+          {conversacionActual?.tipoChat === "atencion_cliente" && conversacionActual?.asuntoId && (
+            <TouchableOpacity onPress={resolverAsunto} style={styles.resolverButton}>
+              <Ionicons name="checkmark-circle" size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <FlatList
+          ref={flatListRef}
+          data={mensajes}
+          keyExtractor={(item, index) => `${item.id || index}`}
+          renderItem={({ item }) => renderMensaje(item)}
+          contentContainerStyle={styles.mensajesContainer}
+          onContentSizeChange={() => desplazarAlFinal()}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="chatbubbles-outline" size={64} color="#ccc" />
+              <Text style={styles.emptyText}>No hay mensajes en esta conversación</Text>
+            </View>
+          )}
+        />
+
+        {mostrarSelectorArchivos && (
+          <SelectorArchivos onArchivosSeleccionados={agregarArchivos} deshabilitado={subiendo} />
+        )}
+
+        {archivosPreview.length > 0 && (
+          <PrevisualizadorArchivos
+            archivos={archivosPreview}
+            onRemover={removerArchivo}
+            onEnviar={enviarMensajeConArchivosHandler}
+            enviando={subiendo}
+          />
+        )}
+
+        <View style={styles.inputContainer}>
+          <TouchableOpacity
+            style={[styles.botonAttach, subiendo && styles.botonDeshabilitado]}
+            onPress={() => setMostrarSelectorArchivos(!mostrarSelectorArchivos)}
+            disabled={subiendo}
+          >
+            <Ionicons name="attach" size={20} color={Colors.light.primary} />
+          </TouchableOpacity>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Escribe un mensaje..."
+            value={inputTexto}
+            onChangeText={setInputTexto}
+            multiline
+            maxLength={500}
+          />
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              !inputTexto.trim() && archivosSeleccionados.length === 0 && styles.sendButtonDisabled,
+              subiendo && styles.sendButtonDisabled,
+            ]}
+            onPress={enviarMensaje}
+            disabled={(!inputTexto.trim() && archivosSeleccionados.length === 0) || subiendo}
+          >
+            <Ionicons name={archivosSeleccionados.length > 0 ? "cloud-upload" : "send"} size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    )
+  }
+
+  function renderMensaje(item: Mensaje) {
     const esAdmin = item.tipo === "admin"
     const linkStyle = esAdmin ? styles.linkTextPropio : styles.linkTextCliente
 
@@ -429,7 +582,6 @@ export default function AdminChatScreen() {
         <View style={[styles.mensajeBubble, esAdmin ? styles.bubblePropio : styles.bubbleCliente]}>
           {item.archivos && item.archivos.length > 0 && <VisorMultimedia archivos={item.archivos} />}
 
-          {/* Mostrar contenido del mensaje */}
           {item.contenido && (
             <Text style={[styles.mensajeTexto, esAdmin && styles.mensajeTextoPropio]}>
               {item.contenido.split(/(https?:\/\/[^\s]+)/g).map((part, index) =>
@@ -454,183 +606,6 @@ export default function AdminChatScreen() {
       </View>
     )
   }
-
-  const renderListaConversaciones = () => (
-    <View style={styles.listaContainer}>
-      <View style={styles.listaHeader}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={28} color="#222" />
-        </TouchableOpacity>
-        <Text style={styles.listaTitle}>Conversaciones Activas</Text>
-        <View style={styles.connectionStatus}>
-          <View
-            style={[styles.connectionDot, connected ? styles.connectionDotConnected : styles.connectionDotDisconnected]}
-          />
-          <Text style={styles.connectionText}>{connected ? "Conectado" : "Desconectado"}</Text>
-        </View>
-      </View>
-
-      <View style={styles.filtrosContainer}>
-        <TouchableOpacity
-          style={[styles.filtroButton, filtroTipo === "todos" && styles.filtroButtonActivo]}
-          onPress={() => {
-            setFiltroTipo("todos")
-            chatService.solicitarConversacionesActivas("todos")
-          }}
-        >
-          <Text style={[styles.filtroButtonText, filtroTipo === "todos" && styles.filtroButtonTextActivo]}>Todos</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filtroButton, filtroTipo === "ventas" && styles.filtroButtonActivo]}
-          onPress={() => {
-            setFiltroTipo("ventas")
-            chatService.solicitarConversacionesActivas("ventas")
-          }}
-        >
-          <Text style={[styles.filtroButtonText, filtroTipo === "ventas" && styles.filtroButtonTextActivo]}>
-            Ventas
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filtroButton, filtroTipo === "atencion_cliente" && styles.filtroButtonActivo]}
-          onPress={() => {
-            setFiltroTipo("atencion_cliente")
-            chatService.solicitarConversacionesActivas("atencion_cliente")
-          }}
-        >
-          <Text style={[styles.filtroButtonText, filtroTipo === "atencion_cliente" && styles.filtroButtonTextActivo]}>
-            Atención
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.light.primary} />
-        </View>
-      ) : (
-        <FlatList
-          data={conversaciones}
-          keyExtractor={(item, index) => `${item.usuarioId}_${item.tipoChat}_${item.asuntoId || "null"}_${index}`}
-          renderItem={renderConversacion}
-          contentContainerStyle={styles.conversacionesList}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="chatbubbles-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>No hay conversaciones activas</Text>
-            </View>
-          )}
-        />
-      )}
-    </View>
-  )
-
-  const renderChat = () => (
-    <KeyboardAvoidingView
-      style={styles.chatContainer}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-    >
-      <View style={styles.chatHeader}>
-        <TouchableOpacity onPress={() => setConversacionActual(null)}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <View style={styles.chatHeaderInfo}>
-          <Text style={styles.chatHeaderTitle}>{conversacionActual?.usuario.nombre}</Text>
-          <Text style={styles.chatHeaderSubtitle}>
-            {conversacionActual?.usuario.email}
-            {conversacionActual?.asunto && ` - ${conversacionActual.asunto.titulo}`}
-          </Text>
-        </View>
-        {conversacionActual?.tipoChat === "atencion_cliente" && conversacionActual?.asuntoId && (
-          <TouchableOpacity onPress={resolverAsunto} style={styles.resolverButton}>
-            <Ionicons name="checkmark-circle" size={24} color="#fff" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <FlatList
-        ref={flatListRef}
-        data={mensajes}
-        keyExtractor={(item, index) => `${item.id || index}`}
-        renderItem={renderMensaje}
-        contentContainerStyle={styles.mensajesContainer}
-        onContentSizeChange={scrollToBottom}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="chatbubbles-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No hay mensajes en esta conversación</Text>
-          </View>
-        )}
-      />
-
-      {mostrarSelectorArchivos && (
-        <SelectorArchivos onArchivosSeleccionados={handleArchivosSeleccionados} deshabilitado={subiendoArchivos} />
-      )}
-
-      {archivosPrevistos.length > 0 && (
-        <PrevisualizadorArchivos
-          archivos={archivosPrevistos}
-          onRemover={removerArchivo}
-          onEnviar={enviarMensajeConArchivos}
-          enviando={subiendoArchivos}
-        />
-      )}
-
-      <View style={styles.inputContainer}>
-        <TouchableOpacity
-          style={[styles.botonAttach, subiendoArchivos && styles.botonDeshabilitado]}
-          onPress={() => setMostrarSelectorArchivos(!mostrarSelectorArchivos)}
-          disabled={subiendoArchivos}
-        >
-          <Ionicons name="attach" size={20} color={Colors.light.primary} />
-        </TouchableOpacity>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Escribe un mensaje..."
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-          maxLength={500}
-        />
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            !inputText.trim() && archivosSeleccionados.length === 0 && styles.sendButtonDisabled,
-            subiendoArchivos && styles.sendButtonDisabled,
-          ]}
-          onPress={enviarMensaje}
-          disabled={(!inputText.trim() && archivosSeleccionados.length === 0) || subiendoArchivos}
-        >
-          <Ionicons name={archivosSeleccionados.length > 0 ? "cloud-upload" : "send"} size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
-  )
-
-  if (!state.isAuthenticated || state.user?.role !== "admin") {
-    return (
-      <View style={styles.container}>
-        <View style={styles.notAuthContainer}>
-          <Ionicons name="lock-closed" size={64} color="#ccc" />
-          <Text style={styles.notAuthText}>Acceso solo para administradores</Text>
-        </View>
-      </View>
-    )
-  }
-
-  return (
-    <>
-      <StatusBar backgroundColor={Colors.light.primary} style="light" />
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <View style={styles.content}>{!conversacionActual ? renderListaConversaciones() : renderChat()}</View>
-        </View>
-      </SafeAreaView>
-    </>
-  )
 }
 
 const styles = StyleSheet.create({
@@ -660,7 +635,7 @@ const styles = StyleSheet.create({
   listaHeader: {
     flexDirection: "row",
     alignItems: "center",        // 🔹 Centra verticalmente
-    justifyContent: "space-between",   
+    justifyContent: "space-between",
     padding: 16,
     backgroundColor: "#fff",
     borderBottomWidth: 1,

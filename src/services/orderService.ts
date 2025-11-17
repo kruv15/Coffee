@@ -47,6 +47,46 @@ export interface OrderResponse {
 }
 
 export const orderService = {
+  async obtenerMisPedidos(token: string): Promise<OrderResponse> {
+    try {
+      console.log("📋 OrderService: Obteniendo mis pedidos")
+
+      const response = await fetch(`${API_BASE_URL}/pedidos/mis-pedidos`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      })
+
+      const data = await response.json()
+      console.log("📡 OrderService: Respuesta mis pedidos:", response.status, JSON.stringify(data, null, 2))
+
+      if (response.ok && data.success) {
+        return {
+          success: true,
+          message: data.message || "Pedidos obtenidos exitosamente",
+          data: {
+            pedidos: data.data, // El backend devuelve directamente el array
+            totalPages: 1,
+            currentPage: 1,
+            total: data.data?.length || 0,
+          },
+        }
+      } else {
+        return {
+          success: false,
+          message: data.message || "Error al obtener los pedidos",
+        }
+      }
+    } catch (error) {
+      console.error("❌ OrderService: Error obteniendo mis pedidos:", error)
+      return {
+        success: false,
+        message: "Error de conexión al obtener los pedidos",
+      }
+    }
+  },
   async createOrder(orderData: CreateOrderRequest, token: string): Promise<OrderResponse> {
     try {
       console.log("📝 OrderService: Creating order:", orderData)

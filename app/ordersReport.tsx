@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native"
@@ -25,6 +26,7 @@ export default function OrdersReportScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [searchUserName, setSearchUserName] = useState<string>("")
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -91,6 +93,13 @@ export default function OrdersReportScreen() {
   const onRefresh = () => {
     setRefreshing(true)
     loadOrders(false, 1)
+  }
+
+  const getFilteredOrders = () => {
+    return orders.filter((order) => {
+      const fullName = `${order.userId?.nombreUsr || ""} ${order.userId?.apellidoUsr || ""}`.toLowerCase()
+      return fullName.includes(searchUserName.toLowerCase())
+    })
   }
 
   const getStatusColor = (status: string) => {
@@ -253,19 +262,36 @@ export default function OrdersReportScreen() {
     )
   }
 
+  const filteredOrders = getFilteredOrders()
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={28} color="#222" />
         </TouchableOpacity>
-        <Text style={styles.title}>Pedidos ({orders.length})</Text>
+        <Text style={styles.title}>Pedidos ({filteredOrders.length})</Text>
         <TouchableOpacity onPress={() => loadOrders(true, pagination.currentPage)} style={styles.refreshButton}>
           <Ionicons name="refresh" size={24} color="#795548" />
         </TouchableOpacity>
       </View>
 
-      {/* Filter Buttons */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar por nombre del usuario..."
+          placeholderTextColor="#ccc"
+          value={searchUserName}
+          onChangeText={setSearchUserName}
+        />
+        {searchUserName !== "" && (
+          <TouchableOpacity onPress={() => setSearchUserName("")} style={styles.clearButton}>
+            <Ionicons name="close-circle" size={20} color="#999" />
+          </TouchableOpacity>
+        )}
+      </View>
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
         {["all", "pendiente", "confirmado", "preparando", "listo", "entregado", "cancelado"].map((status) => (
           <TouchableOpacity
@@ -280,11 +306,11 @@ export default function OrdersReportScreen() {
         ))}
       </ScrollView>
 
-      {/* Pagination Info */}
       {pagination.total > 0 && (
         <View style={styles.paginationInfo}>
           <Text style={styles.paginationText}>
             Página {pagination.currentPage} de {pagination.totalPages} • Total: {pagination.total} pedidos
+            {searchUserName && ` • Filtrados: ${filteredOrders.length}`}
           </Text>
         </View>
       )}
@@ -293,7 +319,7 @@ export default function OrdersReportScreen() {
         style={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {orders.map((order) => (
+        {filteredOrders.map((order) => (
           <View key={order._id} style={styles.orderCard}>
             <View style={styles.orderHeader}>
               <Text style={styles.orderId}>Pedido #{order._id.slice(-6)}</Text>
@@ -312,7 +338,6 @@ export default function OrdersReportScreen() {
               <Text style={styles.orderDate}>{formatDate(order.createdAt)}</Text>
             </View>
 
-            {/* Dirección de entrega */}
             <View style={styles.deliveryInfo}>
               <Text style={styles.deliveryTitle}>Dirección de entrega:</Text>
               <Text style={styles.deliveryAddress}>{order.direccionEntrega}</Text>
@@ -351,7 +376,6 @@ export default function OrdersReportScreen() {
                 <Text style={styles.orderTotal}>Total: Bs{order.total.toFixed(2)}</Text>
               </View>
 
-              {/* Action Buttons */}
               {state.user?.role === "admin" && (
                 <View style={styles.actionButtons}>
                   {order.status === "pendiente" && (
@@ -401,11 +425,13 @@ export default function OrdersReportScreen() {
           </View>
         ))}
 
-        {orders.length === 0 && (
+        {filteredOrders.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="receipt-outline" size={64} color="#ccc" />
             <Text style={styles.emptyText}>
-              No hay pedidos {filterStatus !== "all" ? `con estado "${getStatusText(filterStatus)}"` : ""}
+              {searchUserName
+                ? `No hay pedidos para el usuario "${searchUserName}"`
+                : `No hay pedidos ${filterStatus !== "all" ? `con estado "${getStatusText(filterStatus)}"` : ""}`}
             </Text>
             <TouchableOpacity onPress={() => loadOrders(true, 1)} style={styles.retryButton}>
               <Text style={styles.retryButtonText}>Recargar</Text>
@@ -413,7 +439,6 @@ export default function OrdersReportScreen() {
           </View>
         )}
 
-        {/* Load More Button */}
         {pagination.currentPage < pagination.totalPages && (
           <TouchableOpacity style={styles.loadMoreButton} onPress={() => loadOrders(true, pagination.currentPage + 1)}>
             <Text style={styles.loadMoreText}>Cargar más pedidos</Text>
@@ -421,7 +446,6 @@ export default function OrdersReportScreen() {
         )}
       </ScrollView>
 
-      {/* Order Details Modal */}
       <OrderDetailsModal
         visible={isDetailsModalVisible}
         order={selectedOrder}
@@ -435,6 +459,28 @@ export default function OrdersReportScreen() {
 }
 
 const styles = StyleSheet.create({
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#333",
+  },
+  clearButton: {
+    padding: 4,
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",

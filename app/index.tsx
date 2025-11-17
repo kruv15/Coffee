@@ -196,6 +196,10 @@ export default function HomeScreen() {
     router.push("/chat")
   }
 
+  const handleGoToOrders = () => {
+    router.push("/orders")
+  }
+
   const handleUserIconPress = () => {
     if (state.isAuthenticated) {
       setUserProfileVisible(true)
@@ -281,7 +285,12 @@ export default function HomeScreen() {
         </View>
       </View>
       <View style={styles.headerRight}>
-        {state.isAuthenticated && (
+        {state.isAuthenticated && state.user?.role !== "admin" && (
+          <TouchableOpacity onPress={handleGoToOrders} style={styles.ordersButton}>
+            <Ionicons name="receipt-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+        )}
+        {state.isAuthenticated && state.user?.role !== "admin" && (
           <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
             <Ionicons name="chatbubbles" size={24} color="#fff" />
           </TouchableOpacity>
@@ -839,5 +848,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  ordersButton: {
+    backgroundColor: "#8B6F47",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
 })
