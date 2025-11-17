@@ -75,23 +75,6 @@ export function PrevisualizadorArchivos({
           renderItem={renderizarArchivo}
           scrollEnabled={false}
         />
-
-        <TouchableOpacity
-          style={[styles.botonEnviar, enviando && styles.botonEnviando]}
-          onPress={onEnviar}
-          disabled={enviando}
-        >
-          {enviando ? (
-            <>
-              <Text style={styles.textoEnviando}>Subiendo...</Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name="cloud-upload" size={18} color="#fff" />
-              <Text style={styles.textoBotonEnviar}>Enviar</Text>
-            </>
-          )}
-        </TouchableOpacity>
       </View>
 
       <Modal visible={!!imagenAmpliada} transparent animationType="fade" onRequestClose={() => setImagenAmpliada(null)}>

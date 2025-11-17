@@ -2,8 +2,8 @@
 
 import { Ionicons } from "@expo/vector-icons"
 import { router } from "expo-router"
-import React, { useEffect, useState } from "react"
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
+import React, { useEffect, useRef, useState } from "react"
+import { ActivityIndicator, FlatList, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
 import { CartModal } from "../src/components/CartModal"
 import { LoginModal } from "../src/components/LoginModal"
 import { ProductDetailModal } from "../src/components/ProductDetailModal"
@@ -13,6 +13,13 @@ import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { socialMediaService } from "../src/services/socialMediaService"
 import type { CartItem, Product } from "../src/types"
+
+const CATEGORIES = [
+  { value: 'cafe-grano', label: 'Café-Grano' },
+  { value: 'cafe-molido', label: 'Café-Molido' },
+  { value: 'capsulas', label: 'Capsulas' },
+  { value: 'instantaneo', label: 'Café-Instantaneo' },
+];
 
 export default function HomeScreen() {
   const { state, forceRefresh } = useAuth()
@@ -25,6 +32,9 @@ export default function HomeScreen() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [categoryModalVisible, setCategoryModalVisible] = useState<boolean>(false)
+  const categoryScrollRef = useRef<FlatList>(null)
 
   // Function to load ALL products from database
   const loadProductsFromAPI = async () => {
@@ -186,6 +196,10 @@ export default function HomeScreen() {
     router.push("/chat")
   }
 
+  const handleGoToOrders = () => {
+    router.push("/orders")
+  }
+
   const handleUserIconPress = () => {
     if (state.isAuthenticated) {
       setUserProfileVisible(true)
@@ -216,12 +230,16 @@ export default function HomeScreen() {
     }
   }, [state.isAuthenticated, state.user])
 
-  // Filtrar productos por búsqueda
-  const filteredProducts = products.filter(
-    (product) =>
+  // Filtrar productos por búsqueda Y categoría
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase())),
-  )
+      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    
+    const matchesCategory = !selectedCategory || product.category === selectedCategory
+    
+    return matchesSearch && matchesCategory
+  })
 
   const renderProductItem = ({ item }: { item: Product }) => (
     <TouchableOpacity onPress={() => setSelectedProduct(item)} style={styles.card}>
@@ -267,7 +285,12 @@ export default function HomeScreen() {
         </View>
       </View>
       <View style={styles.headerRight}>
-        {state.isAuthenticated && (
+        {state.isAuthenticated && state.user?.role !== "admin" && (
+          <TouchableOpacity onPress={handleGoToOrders} style={styles.ordersButton}>
+            <Ionicons name="receipt-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+        )}
+        {state.isAuthenticated && state.user?.role !== "admin" && (
           <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
             <Ionicons name="chatbubbles" size={24} color="#fff" />
           </TouchableOpacity>
@@ -309,6 +332,139 @@ export default function HomeScreen() {
     </View>
   )
 
+  const renderCategoryFilter = () => (
+    <View style={styles.categoryFilterWrapper}>
+      {/* Botón Dropdown para ver todas las categorías */}
+      <TouchableOpacity
+        style={styles.categoryDropdownButton}
+        onPress={() => setCategoryModalVisible(true)}
+      >
+        <Ionicons name="filter" size={18} color="#fff" />
+        <Text style={styles.categoryDropdownButtonText}>Filtros</Text>
+        <Ionicons name="chevron-down" size={18} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Carrusel horizontal de categorías */}
+      <FlatList
+        ref={categoryScrollRef}
+        data={[{ value: null, label: 'Todos' }, ...CATEGORIES]}
+        keyExtractor={(item) => item.value || 'todos'}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.categoryFilterButton,
+              selectedCategory === item.value && styles.categoryFilterButtonActive
+            ]}
+            onPress={() => setSelectedCategory(item.value)}
+          >
+            <Text style={[
+              styles.categoryFilterButtonText,
+              selectedCategory === item.value && styles.categoryFilterButtonTextActive
+            ]}>
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        )}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        snapToInterval={120}
+        decelerationRate="fast"
+        contentContainerStyle={styles.categoryScrollContent}
+        style={styles.categoryScroll}
+      />
+    </View>
+  )
+
+  const renderCategoryModal = () => (
+    <Modal
+      visible={categoryModalVisible}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setCategoryModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.categoryModalContent}>
+          <View style={styles.categoryModalHeader}>
+            <Text style={styles.categoryModalTitle}>Selecciona una Categoría</Text>
+            <TouchableOpacity onPress={() => setCategoryModalVisible(false)}>
+              <Ionicons name="close" size={28} color="#222" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.categoryModalList}>
+            {/* Opción Todos */}
+            <TouchableOpacity
+              style={[
+                styles.categoryModalItem,
+                selectedCategory === null && styles.categoryModalItemActive
+              ]}
+              onPress={() => {
+                setSelectedCategory(null)
+                setCategoryModalVisible(false)
+              }}
+            >
+              <View style={styles.categoryModalItemContent}>
+                <Ionicons
+                  name={selectedCategory === null ? "checkmark-circle" : "ellipse-outline"}
+                  size={24}
+                  color={selectedCategory === null ? Colors.light.primary : "#ccc"}
+                />
+                <Text style={[
+                  styles.categoryModalItemText,
+                  selectedCategory === null && styles.categoryModalItemTextActive
+                ]}>
+                  Todos
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Opciones de categorías */}
+            {CATEGORIES.map((category) => (
+              <TouchableOpacity
+                key={category.value}
+                style={[
+                  styles.categoryModalItem,
+                  selectedCategory === category.value && styles.categoryModalItemActive
+                ]}
+                onPress={() => {
+                  setSelectedCategory(category.value)
+                  setCategoryModalVisible(false)
+                }}
+              >
+                <View style={styles.categoryModalItemContent}>
+                  <Ionicons
+                    name={selectedCategory === category.value ? "checkmark-circle" : "ellipse-outline"}
+                    size={24}
+                    color={selectedCategory === category.value ? Colors.light.primary : "#ccc"}
+                  />
+                  <Text style={[
+                    styles.categoryModalItemText,
+                    selectedCategory === category.value && styles.categoryModalItemTextActive
+                  ]}>
+                    {category.label}
+                  </Text>
+                </View>
+                {selectedCategory === category.value && (
+                  <View style={styles.categoryModalItemCheckmark}>
+                    <Ionicons name="checkmark" size={18} color={Colors.light.primary} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <TouchableOpacity
+            style={styles.categoryModalCloseButton}
+            onPress={() => setCategoryModalVisible(false)}
+          >
+            <Text style={styles.categoryModalCloseButtonText}>Cerrar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  )
+
   const renderProductStats = () => (
     <View style={styles.statsContainer}>
       <Text style={styles.statsText}>{loading ? "Cargando..." : `${products.length} productos encontrados`}</Text>
@@ -324,6 +480,8 @@ export default function HomeScreen() {
     <View style={styles.container}>
       {renderHeader()}
       {renderSearchBar()}
+      {renderCategoryFilter()}
+      {renderCategoryModal()}
       {renderProductStats()}
 
       <FlatList
@@ -563,5 +721,140 @@ const styles = StyleSheet.create({
   },
   refreshButton: {
     padding: 4,
+  },
+  categoryFilterWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  categoryDropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: Colors.light.primary,
+    borderRadius: 16,
+    justifyContent: 'center',
+  },
+  categoryDropdownButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  categoryScroll: {
+    flex: 1,
+  },
+  categoryScrollContent: {
+    paddingHorizontal: 8,
+    paddingVertical: 0,
+  },
+  categoryFilterButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginHorizontal: 4,
+  },
+  categoryFilterButtonActive: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  categoryFilterButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#666',
+  },
+  categoryFilterButtonTextActive: {
+    color: '#fff',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  categoryModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  categoryModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  categoryModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  categoryModalList: {
+    maxHeight: '70%',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  categoryModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    marginVertical: 6,
+    borderRadius: 12,
+    backgroundColor: '#f8f8f8',
+  },
+  categoryModalItemActive: {
+    backgroundColor: '#f0f8ff',
+    borderWidth: 1,
+    borderColor: Colors.light.primary,
+  },
+  categoryModalItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  categoryModalItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666',
+  },
+  categoryModalItemTextActive: {
+    color: Colors.light.primary,
+    fontWeight: '600',
+  },
+  categoryModalItemCheckmark: {
+    marginLeft: 8,
+  },
+  categoryModalCloseButton: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingVertical: 14,
+    backgroundColor: Colors.light.primary,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  categoryModalCloseButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  ordersButton: {
+    backgroundColor: "#8B6F47",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
 })

@@ -39,6 +39,7 @@ export default function RootLayout() {
           <Stack.Screen name="ordersReport" options={{ headerShown: false }} />
           <Stack.Screen name="salesReport" options={{ headerShown: false }} />
           <Stack.Screen name="checkout" options={{ headerShown: false }} />
+          <Stack.Screen name="orders" options={{ headerShown: false }} />
         </Stack>
       </ThemeProvider>
     </AuthProvider>
