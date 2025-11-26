@@ -18,7 +18,7 @@
         "backgroundColor": "#795548"
       },
       "edgeToEdgeEnabled": true,
-      "package": "",
+      "package": "com.skr3.COFFEE",
       "icon": "./assets/images/icon.png",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -35,14 +35,15 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
       ],
       "expo-maps",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
@@ -51,7 +52,7 @@
       "EXPO_ROUTER_APP_ROOT": "app",
       "router": {},
       "eas": {
-        "projectId": "83e7afce-41a2-4c82-9086-86beb9e5e7c9"
+        "projectId": "dccd4796-de3a-4d8b-8be9-24a6b22764e1"
       }
     },
     "owner": "skr3"
