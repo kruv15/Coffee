@@ -8,7 +8,7 @@ const SOCIAL_MEDIA_URLS = {
 export const socialMediaService = {
   async openTikTok(): Promise<void> {
     try {
-      console.log('🎵 Opening TikTok...');
+      console.log('Abriendo Tiktok...');
       
       // Intentar abrir la app de TikTok primero
       const tiktokAppUrl = 'tiktok://user?username=skr3151';
@@ -21,14 +21,14 @@ export const socialMediaService = {
         await Linking.openURL(SOCIAL_MEDIA_URLS.tiktok);
       }
     } catch (error) {
-      console.error('❌ Error opening TikTok:', error);
+      console.error('Error opening TikTok:', error);
       Alert.alert('Error', 'No se pudo abrir TikTok');
     }
   },
 
   async openInstagram(): Promise<void> {
     try {
-      console.log('📸 Opening Instagram...');
+      console.log('Opening Instagram...');
       
       // Intentar abrir la app de Instagram primero
       const instagramAppUrl = 'instagram://user?username=kevin_urena_15';
@@ -41,7 +41,7 @@ export const socialMediaService = {
         await Linking.openURL(SOCIAL_MEDIA_URLS.instagram);
       }
     } catch (error) {
-      console.error('❌ Error opening Instagram:', error);
+      console.error('Error opening Instagram:', error);
       Alert.alert('Error', 'No se pudo abrir Instagram');
     }
   },

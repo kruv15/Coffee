@@ -55,7 +55,7 @@ export function AddProductModal({
     descripcionProd: '',
     precioProd: '',
     stock: '',
-    categoria: 'cafe', // Siempre por defecto "cafe"
+    categoria: 'cafe',
     imagen: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -81,7 +81,7 @@ export function AddProductModal({
       descripcionProd: '',
       precioProd: '',
       stock: '',
-      categoria: 'cafe', // Siempre resetear a "cafe"
+      categoria: 'cafe',
       imagen: '',
     });
     setErrors({});
@@ -137,7 +137,6 @@ export function AddProductModal({
     }
 
     if (state.isAuthenticated && state.user?.role === 'admin' && state.token) {
-      console.log('🔑 Admin detected - using API mode');
       setLoading(true);
       
       try {
@@ -146,18 +145,16 @@ export function AddProductModal({
           descripcionProd: formData.descripcionProd.trim(),
           precioProd: parseFloat(formData.precioProd),
           stock: parseInt(formData.stock),
-          categoria: formData.categoria, // usar categoría seleccionada
+          categoria: formData.categoria,
           imagen: formData.imagen.trim(),
         };
 
-        console.log('📦 Sending to API (categoria forced to "cafe"):', JSON.stringify(productData, null, 2));
-        console.log('🔑 Using admin token:', state.token.substring(0, 30) + '...');
+        console.log('Sending to API (categoria forced to "cafe"):', JSON.stringify(productData, null, 2));
+        console.log('Using admin token:', state.token.substring(0, 30) + '...');
 
         const result = editingProduct 
           ? await productService.updateProduct(editingProduct.id, productData, state.token)
           : await productService.createProduct(productData, state.token);
-
-        console.log('📡 API Response:', result);
 
         if (result.success) {
           Alert.alert(
@@ -175,7 +172,6 @@ export function AddProductModal({
             ]
           );
         } else {
-          console.error('❌ API Error:', result);
           Alert.alert(
             'Error de Base de Datos', 
             `No se pudo guardar en la base de datos:\n${result.message}\n\n¿Quieres guardarlo localmente?`,
@@ -189,7 +185,7 @@ export function AddProductModal({
           );
         }
       } catch (error) {
-        console.error('❌ Network Error:', error);
+        console.error('Network Error:', error);
         Alert.alert(
           'Error de Conexión', 
           'No se pudo conectar con el servidor.\n¿Quieres guardarlo localmente?',
@@ -208,7 +204,6 @@ export function AddProductModal({
     }
 
     // Si no hay token de admin válido, usar modo local
-    console.log('⚠️ No admin token - using local mode');
     handleLocalSave();
   };
 

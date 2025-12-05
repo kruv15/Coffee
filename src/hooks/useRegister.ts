@@ -67,7 +67,6 @@ export const useRegister = () => {
         contraseña: data.password,
       };
 
-      console.log('📤 Register hook: Sending registration request');
       const response = await authService.register(requestBody);
 
       if (response.success) {
@@ -83,7 +82,6 @@ export const useRegister = () => {
 
         const token = response.token || response.data?.token || 'registration-token-' + Date.now();
 
-        console.log('✅ Register hook: Registration successful, logging in user');
         await login(userData, token);
 
         Alert.alert('Éxito', 'Registro exitoso. ¡Bienvenido!');
@@ -93,7 +91,7 @@ export const useRegister = () => {
         return false;
       }
     } catch (error) {
-      console.error('❌ Register hook error:', error);
+      console.error('Register hook error:', error);
       Alert.alert('Error', 'Error de conexión. Verifica tu internet y vuelve a intentar.');
       return false;
     } finally {

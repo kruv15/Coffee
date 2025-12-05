@@ -45,7 +45,7 @@ export const useLogin = () => {
         return false;
       }
     } catch (error) {
-      console.error('❌ Login hook error:', error);
+      console.error('Login hook error:', error);
       Alert.alert('Error', 'Error de conexión. Verifica tu internet.');
       return false;
     } finally {

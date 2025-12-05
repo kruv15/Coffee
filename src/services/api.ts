@@ -18,18 +18,13 @@ export interface ProductResponse {
 export const productService = {
   async createProduct(productData: CreateProductData, token: string): Promise<ProductResponse> {
     try {
-      console.log('🚀 API Call - Creating product');
-      console.log('📝 Data:', JSON.stringify(productData, null, 2));
-      console.log('🔑 Token (first 30 chars):', token.substring(0, 30) + '...');
-      console.log('🌐 URL:', `${API_BASE_URL}/productos`);
-      
       // Asegurar que la categoría sea "cafe"
       const formattedData = {
         ...productData,
         categoria: "cafe"
       };
       
-      console.log('📝 Formatted Data:', JSON.stringify(formattedData, null, 2));
+      console.log('Formatted Data:', JSON.stringify(formattedData, null, 2));
       
       const response = await fetch(`${API_BASE_URL}/productos`, {
         method: 'POST',
@@ -41,33 +36,26 @@ export const productService = {
         body: JSON.stringify(formattedData),
       });
       
-      console.log('📡 Response Status:', response.status);
-      
       const responseText = await response.text();
-      console.log('📦 Raw Response:', responseText);
       
       let responseData;
       try {
         responseData = responseText ? JSON.parse(responseText) : {};
       } catch (parseError) {
-        console.error('❌ JSON Parse Error:', parseError);
+        console.error('JSON Parse Error:', parseError);
         return {
           success: false,
           message: `Error del servidor: ${response.status} - Respuesta no válida`,
         };
       }
       
-      console.log('📊 Parsed Response:', JSON.stringify(responseData, null, 2));
-      
       if (response.ok) {
-        console.log('✅ SUCCESS - Product created in database');
         return {
           success: true,
           message: responseData.message || 'Producto creado correctamente en la base de datos',
           data: responseData,
         };
       } else {
-        console.log('❌ FAILED - Product NOT created in database');
         let errorMessage = 'Error al crear el producto en la base de datos';
         
         if (responseData.message) {
@@ -89,7 +77,7 @@ export const productService = {
         };
       }
     } catch (error) {
-      console.error('❌ Network Error:', error);
+      console.error('Network Error:', error);
       return {
         success: false,
         message: 'Error de conexión con la base de datos. Verifica tu internet.',
@@ -99,7 +87,6 @@ export const productService = {
 
   async updateProduct(productId: string, productData: CreateProductData, token: string): Promise<ProductResponse> {
     try {
-      console.log('🔄 Updating product:', productId, productData);
       
       const response = await fetch(`${API_BASE_URL}/productos/${productId}`, {
         method: 'PUT',
@@ -111,7 +98,6 @@ export const productService = {
       });
       
       const responseData = await response.json();
-      console.log('📦 Update response:', responseData);
       
       if (response.ok) {
         return {
@@ -127,7 +113,7 @@ export const productService = {
         };
       }
     } catch (error) {
-      console.error('❌ Product update error:', error);
+      console.error('Product update error:', error);
       return {
         success: false,
         message: 'Error de conexión. Verifica tu internet e intenta nuevamente.',
@@ -137,7 +123,6 @@ export const productService = {
 
   async deleteProduct(productId: string, token: string): Promise<ProductResponse> {
     try {
-      console.log('🗑️ Deleting product:', productId);
       
       const response = await fetch(`${API_BASE_URL}/productos/${productId}`, {
         method: 'DELETE',
@@ -147,7 +132,6 @@ export const productService = {
       });
       
       const responseData = await response.json();
-      console.log('📦 Delete response:', responseData);
       
       if (response.ok) {
         return {
@@ -163,7 +147,7 @@ export const productService = {
         };
       }
     } catch (error) {
-      console.error('❌ Product delete error:', error);
+      console.error('Product delete error:', error);
       return {
         success: false,
         message: 'Error de conexión. Verifica tu internet e intenta nuevamente.',
@@ -178,8 +162,6 @@ export const productService = {
     limit?: number;
   }): Promise<ProductResponse> {
     try {
-      console.log('📋 Getting products from database with params:', params);
-      
       // Build URL with parameters
       let url = `${API_BASE_URL}/productos`;
       const searchParams = new URLSearchParams();
@@ -201,8 +183,6 @@ export const productService = {
         url += `?${searchParams.toString()}`;
       }
       
-      console.log('🌐 Final URL:', url);
-      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -211,11 +191,9 @@ export const productService = {
         },
       });
       
-      console.log('📡 Products response status:', response.status);
-      
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('❌ Error response:', errorText);
+        console.log('Error response:', errorText);
         return {
           success: false,
           message: `Error ${response.status}: ${errorText}`,
@@ -224,14 +202,14 @@ export const productService = {
       }
       
       const data = await response.json();
-      console.log('📦 Raw products response:', data);
-      console.log('📊 Response type:', typeof data, 'Is array:', Array.isArray(data));
+      console.log('Raw products response:', data);
+      console.log('Response type:', typeof data, 'Is array:', Array.isArray(data));
       
       // Your API returns a direct array of products
       if (Array.isArray(data)) {
-        console.log(`✅ Products array received: ${data.length} items`);
+        console.log(`Products array received: ${data.length} items`);
         if (data.length > 0) {
-          console.log('📋 First product sample:', JSON.stringify(data[0], null, 2));
+          console.log('First product sample:', JSON.stringify(data[0], null, 2));
         }
         
         return {
@@ -240,7 +218,7 @@ export const productService = {
           data: data,
         };
       } else {
-        console.log('⚠️ Unexpected response format, expected array but got:', typeof data);
+        console.log('Unexpected response format, expected array but got:', typeof data);
         return {
           success: false,
           message: 'Formato de respuesta inesperado del servidor',
@@ -249,7 +227,7 @@ export const productService = {
       }
       
     } catch (error) {
-      console.error('❌ Get products network error:', error);
+      console.error('Get products network error:', error);
       return {
         success: false,
         message: 'Error de conexión. Verifica tu internet.',
@@ -260,7 +238,7 @@ export const productService = {
 
   async getAllProducts(): Promise<ProductResponse> {
     try {
-      console.log('🔄 Getting products from API...');
+      console.log('Getting products from API...');
       
       const response = await fetch(`${API_BASE_URL}/productos`, {
         method: 'GET',
@@ -270,16 +248,16 @@ export const productService = {
         },
       });
       
-      console.log('📡 Get products response status:', response.status);
+      console.log('Get products response status:', response.status);
       
       const responseText = await response.text();
-      console.log('📦 Get products raw response:', responseText);
+      console.log('Get products raw response:', responseText);
       
       let responseData;
       try {
         responseData = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('❌ JSON parse error:', parseError);
+        console.error('JSON parse error:', parseError);
         return {
           success: false,
           message: `Error del servidor: ${response.status} - Respuesta no válida`,
@@ -287,7 +265,7 @@ export const productService = {
       }
       
       if (response.ok) {
-        console.log('✅ Products retrieved successfully');
+        console.log('Products retrieved successfully');
         return {
           success: true,
           message: 'Productos obtenidos correctamente',
@@ -301,7 +279,7 @@ export const productService = {
         };
       }
     } catch (error) {
-      console.error('❌ Get products error:', error);
+      console.error('Get products error:', error);
       return {
         success: false,
         message: 'Error de conexión al obtener productos',

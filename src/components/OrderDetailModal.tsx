@@ -297,25 +297,25 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end", // Changed from center to flex-end for better mobile UX
+    justifyContent: "flex-end",
   },
   keyboardView: {
     flex: 1,
-    justifyContent: "flex-end", // Changed from center to flex-end
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: "#fff",
-    borderTopLeftRadius: 20, // Only top corners rounded
+    borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 16,
     paddingTop: 20,
-    paddingBottom: Platform.OS === "ios" ? 34 : 20, // Account for safe area on iOS
-    maxHeight: "90%", // Limit height to 90% of screen
-    minHeight: "70%", // Minimum height
-    width: "100%", // Full width
+    paddingBottom: Platform.OS === "ios" ? 34 : 20,
+    maxHeight: "90%",
+    minHeight: "70%",
+    width: "100%",
     elevation: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 }, // Shadow upward
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-    paddingHorizontal: 4, // Reduced padding
+    paddingHorizontal: 4,
   },
   orderSummaryHeader: {
     flexDirection: "row",

@@ -52,7 +52,6 @@ export function LoginModal({ visible, onClose, onNavigateToRegister }: LoginModa
       const success = await loginWithApi(email, password)
 
       if (success) {
-        console.log("✅ Inicio de sesión exitoso desde modal")
         resetFields()
         onClose()
 
@@ -60,15 +59,13 @@ export function LoginModal({ visible, onClose, onNavigateToRegister }: LoginModa
         // Nota: Esto se ejecutará después de que el contexto se actualice
         setTimeout(() => {
           // El contexto debería estar actualizado ahora
-          console.log("🔍 Checking user role after login...")
         }, 100)
-
         Alert.alert("Éxito", "Has iniciado sesión correctamente.")
       } else {
         Alert.alert("Error", "Correo o contraseña incorrectos.")
       }
     } catch (error) {
-      console.error("❌ Error en login:", error)
+      console.error("Error en login:", error)
       Alert.alert("Error", "Error de conexión. Verifica tu internet.")
     } finally {
       setLoading(false)
@@ -100,7 +97,7 @@ export function LoginModal({ visible, onClose, onNavigateToRegister }: LoginModa
                 <Ionicons name="close" size={28} color="#222" />
               </TouchableOpacity>
               <Text style={styles.title}>Iniciar Sesión.</Text>
-              <View style={{ width: 28 }} /> {/* Espacio para alinear el ícono */}
+              <View style={{ width: 28 }} />
             </View>
 
             <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
@@ -239,4 +236,3 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
 })
-

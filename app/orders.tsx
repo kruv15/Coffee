@@ -53,21 +53,18 @@ export default function OrdersScreen() {
 
     setLoading(true)
     try {
-      console.log("📋 Cargando pedidos del usuario...")
       const response = await orderService.obtenerMisPedidos(state.token)
 
       if (response.success && response.data?.pedidos) {
-        console.log("✅ Pedidos cargados:", response.data.pedidos.length)
         setOrders(response.data.pedidos)
       } else {
-        console.log("⚠️ Sin pedidos encontrados:", response.message)
         setOrders([])
         if (response.message && response.message !== "Pedidos obtenidos exitosamente") {
           Alert.alert("Información", response.message)
         }
       }
     } catch (error) {
-      console.error("❌ Error cargando pedidos:", error)
+      console.error("Error cargando pedidos:", error)
       Alert.alert("Error", "No se pudieron cargar los pedidos")
     } finally {
       setLoading(false)
@@ -465,8 +462,8 @@ const styles = StyleSheet.create({
   statusFilterWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: 4,
+    gap: 6,
   },
   statusDropdownButton: {
     flexDirection: "row",
@@ -491,13 +488,13 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   statusFilterButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     backgroundColor: "#f0f0f0",
     borderWidth: 1,
     borderColor: "#ddd",
-    marginHorizontal: 4,
+    marginHorizontal: 3,
   },
   statusFilterButtonActive: {
     backgroundColor: Colors.light.primary,
@@ -553,7 +550,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 14,
   },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -628,7 +624,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  // Detail Modal
   detailModalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",

@@ -14,7 +14,6 @@ import {
 } from "react-native"
 import { StatusBar } from "expo-status-bar"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { Colors } from "../src/constants/Colors"
 import { useAuth } from "../src/context/AuthContext"
 import { orderService } from "../src/services/orderService"
 

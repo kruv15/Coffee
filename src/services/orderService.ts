@@ -49,7 +49,6 @@ export interface OrderResponse {
 export const orderService = {
   async obtenerMisPedidos(token: string): Promise<OrderResponse> {
     try {
-      console.log("📋 OrderService: Obteniendo mis pedidos")
 
       const response = await fetch(`${API_BASE_URL}/pedidos/mis-pedidos`, {
         method: "GET",
@@ -67,7 +66,7 @@ export const orderService = {
           success: true,
           message: data.message || "Pedidos obtenidos exitosamente",
           data: {
-            pedidos: data.data, // El backend devuelve directamente el array
+            pedidos: data.data,
             totalPages: 1,
             currentPage: 1,
             total: data.data?.length || 0,
@@ -80,7 +79,7 @@ export const orderService = {
         }
       }
     } catch (error) {
-      console.error("❌ OrderService: Error obteniendo mis pedidos:", error)
+      console.error("OrderService: Error obteniendo mis pedidos:", error)
       return {
         success: false,
         message: "Error de conexión al obtener los pedidos",
@@ -89,8 +88,6 @@ export const orderService = {
   },
   async createOrder(orderData: CreateOrderRequest, token: string): Promise<OrderResponse> {
     try {
-      console.log("📝 OrderService: Creating order:", orderData)
-
       const response = await fetch(`${API_BASE_URL}/pedidos`, {
         method: "POST",
         headers: {
@@ -102,7 +99,6 @@ export const orderService = {
       })
 
       const data = await response.json()
-      console.log("📡 OrderService: Create order response:", response.status, data)
 
       if (response.ok) {
         return {
@@ -117,7 +113,7 @@ export const orderService = {
         }
       }
     } catch (error) {
-      console.error("❌ OrderService: Create order error:", error)
+      console.error("OrderService: Create order error:", error)
       return {
         success: false,
         message: "Error de conexión al crear el pedido",
@@ -134,9 +130,6 @@ export const orderService = {
     },
   ): Promise<OrderResponse> {
     try {
-      console.log("📋 OrderService: Getting orders with params:", params)
-
-      // Build URL with parameters
       let url = `${API_BASE_URL}/pedidos`
       const searchParams = new URLSearchParams()
 
@@ -154,8 +147,6 @@ export const orderService = {
         url += `?${searchParams.toString()}`
       }
 
-      console.log("🌐 OrderService: Final URL:", url)
-
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -165,13 +156,13 @@ export const orderService = {
       })
 
       const data = await response.json()
-      console.log("📡 OrderService: Get orders response:", response.status, JSON.stringify(data, null, 2))
+      console.log("OrderService: Get orders response:", response.status, JSON.stringify(data, null, 2))
 
       if (response.ok && data.success) {
         return {
           success: true,
           message: data.message || "Pedidos obtenidos exitosamente",
-          data: data.data, // This contains { pedidos, totalPages, currentPage, total }
+          data: data.data, // Esto contiene { pedidos, totalPages, currentPage, total }
         }
       } else {
         return {
@@ -180,7 +171,7 @@ export const orderService = {
         }
       }
     } catch (error) {
-      console.error("❌ OrderService: Get orders error:", error)
+      console.error("OrderService: Get orders error:", error)
       return {
         success: false,
         message: "Error de conexión al obtener los pedidos",
@@ -190,8 +181,6 @@ export const orderService = {
 
   async getOrderById(orderId: string, token: string): Promise<OrderResponse> {
     try {
-      console.log("🔍 OrderService: Getting order by ID:", orderId)
-
       const response = await fetch(`${API_BASE_URL}/pedidos/${orderId}`, {
         method: "GET",
         headers: {
@@ -201,7 +190,6 @@ export const orderService = {
       })
 
       const data = await response.json()
-      console.log("📡 OrderService: Get order response:", response.status, data)
 
       if (response.ok && data.success) {
         return {
@@ -216,7 +204,7 @@ export const orderService = {
         }
       }
     } catch (error) {
-      console.error("❌ OrderService: Get order error:", error)
+      console.error("OrderService: Get order error:", error)
       return {
         success: false,
         message: "Error de conexión al obtener el pedido",
@@ -226,7 +214,7 @@ export const orderService = {
 
   async updateOrderStatus(orderId: string, status: string, token: string): Promise<OrderResponse> {
     try {
-      console.log("🔄 OrderService: Updating order status:", orderId, status)
+      console.log("OrderService: Updating order status:", orderId, status)
 
       const response = await fetch(`${API_BASE_URL}/pedidos/${orderId}/estado`, {
         method: "PUT",
@@ -239,7 +227,6 @@ export const orderService = {
       })
 
       const data = await response.json()
-      console.log("📡 OrderService: Update status response:", response.status, data)
 
       if (response.ok && data.success) {
         return {
@@ -254,7 +241,7 @@ export const orderService = {
         }
       }
     } catch (error) {
-      console.error("❌ OrderService: Update status error:", error)
+      console.error("OrderService: Update status error:", error)
       return {
         success: false,
         message: "Error de conexión al actualizar el estado",
@@ -264,7 +251,7 @@ export const orderService = {
 
   async cancelOrder(orderId: string, token: string): Promise<OrderResponse> {
     try {
-      console.log("❌ OrderService: Cancelling order:", orderId)
+      console.log("OrderService: Cancelling order:", orderId)
 
       const response = await fetch(`${API_BASE_URL}/pedidos/${orderId}/estado`, {
         method: "PUT",
@@ -277,7 +264,7 @@ export const orderService = {
       })
 
       const data = await response.json()
-      console.log("📡 OrderService: Cancel order response:", response.status, data)
+      console.log("OrderService: Cancel order response:", response.status, data)
 
       if (response.ok && data.success) {
         return {
@@ -292,7 +279,7 @@ export const orderService = {
         }
       }
     } catch (error) {
-      console.error("❌ OrderService: Cancel order error:", error)
+      console.error("OrderService: Cancel order error:", error)
       return {
         success: false,
         message: "Error de conexión al cancelar el pedido",

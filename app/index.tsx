@@ -15,10 +15,10 @@ import { socialMediaService } from "../src/services/socialMediaService"
 import type { CartItem, Product } from "../src/types"
 
 const CATEGORIES = [
-  { value: 'cafe-grano', label: 'Café-Grano' },
-  { value: 'cafe-molido', label: 'Café-Molido' },
-  { value: 'capsulas', label: 'Capsulas' },
-  { value: 'instantaneo', label: 'Café-Instantaneo' },
+  { value: 'Café-Grano', label: 'Café-Grano' },
+  { value: 'Café-Molido', label: 'Café-Molido' },
+  { value: 'Capsulas', label: 'Capsulas' },
+  { value: 'Café-Instantaneo', label: 'Café-Instantaneo' },
 ];
 
 export default function HomeScreen() {
@@ -40,7 +40,6 @@ export default function HomeScreen() {
   const loadProductsFromAPI = async () => {
     setLoading(true)
     try {
-      console.log("🔄 Home: Loading ALL products from database...")
 
       const response = await fetch("https://back-coffee.onrender.com/api/productos", {
         method: "GET",
@@ -50,34 +49,28 @@ export default function HomeScreen() {
         },
       })
 
-      console.log("📡 Home API Response status:", response.status)
-
       if (response.ok) {
         const data = await response.json()
-        console.log("📦 Home API response raw data:", JSON.stringify(data, null, 2))
 
         // Extraer productos de la estructura correcta según las imágenes
         let productsArray = []
 
         if (data && data.data && data.data.productos && Array.isArray(data.data.productos)) {
           productsArray = data.data.productos
-          console.log("✅ Found products in data.data.productos:", productsArray.length)
         } else if (data && data.productos && Array.isArray(data.productos)) {
           productsArray = data.productos
-          console.log("✅ Found products in data.productos:", productsArray.length)
         } else if (Array.isArray(data)) {
           productsArray = data
-          console.log("✅ Found products as direct array:", productsArray.length)
         } else {
-          console.log("❌ No products array found in response structure")
-          console.log("📦 Available keys:", Object.keys(data || {}))
+          console.log("No products array found in response structure")
+          console.log("Available keys:", Object.keys(data || {}))
         }
 
-        console.log("📋 Products array to process:", productsArray)
+        console.log("Products array to process:", productsArray)
 
         if (Array.isArray(productsArray) && productsArray.length > 0) {
           const formattedProducts: Product[] = productsArray.map((product: any, index: number) => {
-            console.log(`🔄 Processing product ${index + 1}:`, product)
+            console.log(`Processing product ${index + 1}:`, product)
 
             const formattedProduct = {
               id: product._id || product.id || `product_${Date.now()}_${index}`,
@@ -88,28 +81,21 @@ export default function HomeScreen() {
               stock: Number(product.stock || 0),
               category: product.categoria || product.category || "cafe",
             }
-
-            console.log(`✅ Formatted product ${index + 1}:`, formattedProduct)
             return formattedProduct
           })
-
-          console.log("✅ Home: Products loaded successfully:", formattedProducts.length)
-          console.log("📊 All formatted products:", formattedProducts)
           setProducts(formattedProducts)
 
           // Force re-render
           setTimeout(() => {
-            console.log("🔄 Products state after setting:", formattedProducts.length)
+            console.log("Products state after setting:", formattedProducts.length)
           }, 100)
         } else {
-          console.log("⚠️ Home: No products found or invalid array structure")
-          console.log("📦 Received data structure:", typeof data, data)
           setProducts([])
         }
       } else {
-        console.log(`❌ Home: API failed with status ${response.status}`)
+        console.log(`Home: API failed with status ${response.status}`)
         const errorText = await response.text()
-        console.log("❌ Home Error response:", errorText)
+        console.log("Home Error response:", errorText)
         setProducts([])
       }
     } catch (error) {
@@ -128,7 +114,6 @@ export default function HomeScreen() {
   // Recargar productos cuando se cree un nuevo producto (si es admin)
   useEffect(() => {
     if (state.isAuthenticated && state.user?.role === "admin") {
-      console.log("🔑 Admin logged in - reloading products")
       loadProductsFromAPI()
     }
   }, [state.isAuthenticated, state.user?.role])
@@ -143,7 +128,7 @@ export default function HomeScreen() {
     })
 
     if (state.isAuthenticated && state.user) {
-      console.log("👤 Current user details:", {
+      console.log("Current user details:", {
         id: state.user.id,
         email: state.user.email,
         name: state.user.name,
@@ -211,14 +196,13 @@ export default function HomeScreen() {
   // Cerrar modal de perfil automáticamente si el usuario se desloguea
   useEffect(() => {
     if (!state.isAuthenticated && userProfileVisible) {
-      console.log("🔄 User logged out - closing profile modal")
       setUserProfileVisible(false)
     }
   }, [state.isAuthenticated, userProfileVisible])
 
   // Efecto para debug y forzar actualización visual
   useEffect(() => {
-    console.log("🔍 Auth state changed:", {
+    console.log("Auth state changed:", {
       isAuthenticated: state.isAuthenticated,
       user: state.user?.email || "none",
       timestamp: new Date().toISOString(),
@@ -247,7 +231,7 @@ export default function HomeScreen() {
         source={{ uri: item.image }}
         style={styles.image}
         onError={(e) => {
-          console.log("❌ Image load error for product:", item.name, e.nativeEvent.error)
+          console.log("Image load error for product:", item.name, e.nativeEvent.error)
         }}
       />
       <View style={styles.info}>

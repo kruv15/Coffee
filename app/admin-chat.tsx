@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
   },
   listaHeader: {
     flexDirection: "row",
-    alignItems: "center",        // 🔹 Centra verticalmente
+    alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
     backgroundColor: "#fff",
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     paddingHorizontal: 10,
-    paddingVertical: Platform.OS === "android" ? 6 : 10, // ✅ más compacto en Android
+    paddingVertical: Platform.OS === "android" ? 6 : 10,
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#e0e0e0",

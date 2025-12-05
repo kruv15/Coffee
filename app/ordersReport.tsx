@@ -46,7 +46,6 @@ export default function OrdersReportScreen() {
     if (showLoading) setLoading(true)
 
     try {
-      console.log("🔄 Loading orders from API...")
       const params = {
         page,
         limit: 10,
@@ -55,14 +54,10 @@ export default function OrdersReportScreen() {
 
       const response = await orderService.getOrders(state.token, params)
 
-      console.log("📡 Full API Response:", JSON.stringify(response, null, 2))
-
       if (response.success && response.data) {
         const { pedidos, totalPages, currentPage, total } = response.data
-
-        console.log("✅ Orders loaded successfully:", pedidos.length)
         if (pedidos.length > 0) {
-          console.log("📋 Sample order:", JSON.stringify(pedidos[0], null, 2))
+          console.log("Sample order:", JSON.stringify(pedidos[0], null, 2))
         }
 
         setOrders(pedidos)
@@ -72,12 +67,12 @@ export default function OrdersReportScreen() {
           total: Number(total),
         })
       } else {
-        console.log("❌ API response not successful:", response)
+        console.log("API response not successful:", response)
         Alert.alert("Error", response.message || "No se pudieron cargar los pedidos")
         setOrders([])
       }
     } catch (error) {
-      console.error("❌ Error loading orders:", error)
+      console.error("Error loading orders:", error)
       Alert.alert("Error", "Error de conexión al cargar los pedidos")
       setOrders([])
     } finally {
@@ -147,12 +142,12 @@ export default function OrdersReportScreen() {
     }
     setLoadingUpdate(true)
     try {
-      console.log("🔄 Updating order status:", orderId, newStatus)
+      console.log("Updating order status:", orderId, newStatus)
       const response = await orderService.updateOrderStatus(orderId, newStatus, state.token)
 
       if (response.success) {
         Alert.alert("Éxito", "Estado del pedido actualizado")
-        await loadOrders(false, pagination.currentPage) // Recargar pedidos
+        await loadOrders(false, pagination.currentPage)
         // Update selected order in modal if it's the one being viewed
         setSelectedOrder((prev) =>
           prev && prev._id === orderId ? { ...prev, status: newStatus as Order["status"] } : prev,
@@ -161,7 +156,7 @@ export default function OrdersReportScreen() {
         Alert.alert("Error", response.message || "No se pudo actualizar el estado")
       }
     } catch (error) {
-      console.error("❌ Error updating order status:", error)
+      console.error("Error updating order status:", error)
       Alert.alert("Error", "Error de conexión al actualizar el estado")
     } finally {
       setLoadingUpdate(false)
@@ -191,7 +186,7 @@ export default function OrdersReportScreen() {
               Alert.alert("Error", response.message || "No se pudo cancelar el pedido")
             }
           } catch (error) {
-            console.error("❌ Error cancelling order:", error)
+            console.error("Error cancelling order:", error)
             Alert.alert("Error", "Error de conexión al cancelar el pedido")
           } finally {
             setLoadingUpdate(false)
@@ -529,22 +524,24 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     marginBottom: 16,
+    maxHeight: 36, 
   },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginRight: 6,
+    borderRadius: 12,
     backgroundColor: "#f5f5f5",
   },
   activeFilterButton: {
     backgroundColor: "#795548",
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#666",
   },
   activeFilterButtonText: {
+    fontSize: 12,
     color: "#fff",
     fontWeight: "bold",
   },

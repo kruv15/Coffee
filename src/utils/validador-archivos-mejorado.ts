@@ -53,9 +53,7 @@ export function obtenerMimeTypeCorrecto(nombreArchivo: string, mimeTypeDisp: str
   return "image/jpeg"
 }
 
-/**
- * Validar archivo con las reglas exactas del backend
- */
+//Validar archivo con las reglas exactas del backend
 export function validarArchivoFrontend(archivo: {
   name: string
   size: number
@@ -95,9 +93,7 @@ export function validarArchivoFrontend(archivo: {
   return { valido: true, tipoArchivo }
 }
 
-/**
- * Normalizar archivo antes de subir (asegurar MIME type correcto)
- */
+//Normalizar archivo antes de subir (asegurar MIME type correcto)
 export function normalizarArchivoParaSubir(archivo: any): any {
   const mimeTypeCorrecto = obtenerMimeTypeCorrecto(archivo.name, archivo.type)
 

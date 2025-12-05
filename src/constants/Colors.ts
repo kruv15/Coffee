@@ -1,9 +1,9 @@
-const tintColorLight = '#795548'; // Coffee brown
-const tintColorDark = '#D7CCC8'; // Light coffee
+const tintColorLight = '#795548';
+const tintColorDark = '#D7CCC8';
 
 export const Colors = {
   light: {
-    text: '#3E2723', // Dark coffee brown
+    text: '#3E2723',
     background: '#fff',
     tint: tintColorLight,
     icon: '#5D4037',

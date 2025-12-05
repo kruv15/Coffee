@@ -37,7 +37,6 @@ export default function CheckoutScreen() {
     coordinates: { latitude: number; longitude: number }
     additionalInfo: string
   }) => {
-    console.log("📍 Dirección seleccionada:", addressData)
     setDeliveryAddress(addressData)
   }
 
@@ -117,7 +116,7 @@ export default function CheckoutScreen() {
 
           try {
             // 1. Crear el pedido en la base de datos primero
-            console.log("🔄 Creating order in database...")
+            console.log("Creating order in database...")
 
             // Preparar datos del pedido para la API
             const orderRequest = {
@@ -129,15 +128,15 @@ export default function CheckoutScreen() {
               infoAdicional: deliveryAddress.additionalInfo || "",
             }
 
-            console.log("📤 Order request data:", JSON.stringify(orderRequest, null, 2))
+            console.log("Order request data:", JSON.stringify(orderRequest, null, 2))
 
             // Llamar al servicio para crear el pedido
             const orderResponse = await orderService.createOrder(orderRequest, state.token!)
 
-            console.log("📡 Order creation response:", orderResponse)
+            console.log("Order creation response:", orderResponse)
 
             if (orderResponse.success) {
-              console.log("✅ Order created successfully in database")
+              console.log("Order created successfully in database")
 
               const orderId = orderResponse.data?.pedidos?.[0]?._id || "N/A"
 
@@ -173,7 +172,7 @@ export default function CheckoutScreen() {
               }
             } else {
               // Error al crear el pedido en la base de datos
-              console.error("❌ Failed to create order in database:", orderResponse.message)
+              console.error("Failed to create order in database:", orderResponse.message)
 
               Alert.alert(
                 "Error al Crear Pedido",
@@ -189,7 +188,7 @@ export default function CheckoutScreen() {
               )
             }
           } catch (error) {
-            console.error("❌ Error creating order:", error)
+            console.error("Error creating order:", error)
 
             Alert.alert(
               "Error de Conexión",

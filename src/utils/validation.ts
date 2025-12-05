@@ -136,8 +136,7 @@ export const validateImageUrl = (url: string): ValidationResult => {
     } else if (trimmedUrl.length > 500) {
       errors.push('La URL es demasiado larga');
     }
-    // Nota: No validamos la extensión específica ya que muchas URLs 
-    // de servicios como Cloudinary no muestran la extensión
+    // Nota: No validamos la extensión específica ya que muchas URLs de servicios como Cloudinary no muestran la extensión
   }
   
   return {

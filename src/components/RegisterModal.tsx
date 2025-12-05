@@ -36,7 +36,7 @@ export function RegisterModal({ visible, onClose, onNavigateToLogin }: RegisterM
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
-  // Reset form when modal closes
+  // Resetear formulario al cerrar el modal
   React.useEffect(() => {
     if (!visible) {
       resetForm();
@@ -44,9 +44,7 @@ export function RegisterModal({ visible, onClose, onNavigateToLogin }: RegisterM
   }, [visible]);
 
   const handleRegister = async () => {
-    // Add console log to verify function is being called
-    console.log('🔄 Starting registration process...');
-    
+
     // Usar funciones de validación
     const nameValidation = validateRequired(name, 'Nombre');
     if (!nameValidation.isValid) {
@@ -94,8 +92,6 @@ export function RegisterModal({ visible, onClose, onNavigateToLogin }: RegisterM
         contraseña: password,
       };
 
-      console.log('📤 Sending registration request:', requestBody);
-
       const response = await fetch('https://back-coffee.onrender.com/api/usuarios/registrar', {
         method: 'POST',
         headers: {
@@ -104,17 +100,13 @@ export function RegisterModal({ visible, onClose, onNavigateToLogin }: RegisterM
         },
         body: JSON.stringify(requestBody),
       });
-
-      console.log('📥 Response status:', response.status);
-      
+  
       let data;
       try {
         const responseText = await response.text();
-        console.log('📥 Raw response:', responseText);
         data = responseText ? JSON.parse(responseText) : {};
-        console.log('📥 Parsed response data:', data);
       } catch (parseError) {
-        console.error('❌ Error parsing response JSON:', parseError);
+        console.error('Error parsing response JSON:', parseError);
         Alert.alert('Error', 'Error en la respuesta del servidor');
         return;
       }
@@ -132,21 +124,20 @@ export function RegisterModal({ visible, onClose, onNavigateToLogin }: RegisterM
 
         const token = data.token || data.data?.token || 'registration-token-' + Date.now();
 
-        console.log('✅ Registration successful, logging in user:', userData);
         await login(userData, token);
 
-        // Reset form
+        // Resetear formulario y cerrar modal
         resetForm();
         onClose();
         Alert.alert('Éxito', 'Registro exitoso. ¡Bienvenido!');
       } else {
         // Manejar errores del servidor
         const errorMessage = data.message || data.error || data.msg || 'Error al registrar usuario';
-        console.error('❌ Registration failed:', errorMessage);
+        console.error('Registration failed:', errorMessage);
         Alert.alert('Error', errorMessage);
       }
     } catch (error) {
-      console.error('❌ Registration error:', error);
+      console.error('Registration error:', error);
       Alert.alert('Error', 'Error de conexión. Verifica tu internet y vuelve a intentar.');
     } finally {
       setLoading(false);
