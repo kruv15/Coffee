@@ -4,6 +4,7 @@ import {
   Image,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -68,7 +69,7 @@ export function ProductDetailModal({ visible, product, onClose, onAddToCart }: P
       onAddToCart({
         ...product,
         pack: selectedPack,
-        price: parseFloat(selectedPackData.price),
+        price: Number.parseFloat(selectedPackData.price),
         quantity,
       });
       onClose();
@@ -100,7 +101,12 @@ export function ProductDetailModal({ visible, product, onClose, onAddToCart }: P
           <Text style={styles.category}>{CATEGORY_LABELS[product.category || ''] || product.category || 'Café'}</Text>
 
           <Text style={styles.packLabel}>Tamaño del Paquete</Text>
-          <View style={styles.packContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.packCarrusel}
+            contentContainerStyle={styles.packContainer}
+          >
             {packs.map((pack: Pack) => (
               <Pressable
                 key={pack.label}
@@ -118,7 +124,7 @@ export function ProductDetailModal({ visible, product, onClose, onAddToCart }: P
                 </Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
 
           <View style={styles.quantityContainer}>
             <TouchableOpacity
@@ -217,9 +223,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
   },
-  packContainer: {
-    flexDirection: 'row',
+  packCarrusel: {
     marginBottom: 16,
+  },
+  packContainer: {
+    flexDirection: "row",
+    paddingRight: 12,
   },
   packButton: {
     backgroundColor: '#f5f5f5',
