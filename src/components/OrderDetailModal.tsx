@@ -147,7 +147,7 @@ export function OrderDetailsModal({
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.orderSummaryHeader}>
-                <Text style={styles.orderId}>Pedido #{order._id.slice(-6)}</Text>
+                <Text style={styles.orderId}>Pedido #{order._id}</Text>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
                   <Text style={styles.statusText}>{getStatusText(order.status)}</Text>
                 </View>

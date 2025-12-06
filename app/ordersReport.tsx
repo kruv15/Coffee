@@ -322,12 +322,12 @@ export default function OrdersReportScreen() {
         {filteredOrders.map((order) => (
           <View key={order._id} style={styles.orderCard}>
             <View style={styles.orderHeader}>
-              <Text style={styles.orderId}>Pedido #{order._id.slice(-6)}</Text>
+              <Text style={styles.orderId}>Pedido #{order._id.substring(0, 12)}...</Text>
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
                 <Text style={styles.statusText}>{getStatusText(order.status)}</Text>
               </View>
             </View>
-
+            
             <View style={styles.customerInfo}>
               <Text style={styles.customerName}>
                 {order.userId?.nombreUsr || "Cliente"}
@@ -372,55 +372,66 @@ export default function OrdersReportScreen() {
             </View>
 
             <View style={styles.orderFooter}>
-              <View>
-                <Text style={styles.orderTotal}>Total: Bs{order.total.toFixed(2)}</Text>
+              <View style={styles.footerRow1}>
+                <Text style={styles.orderTotal}>
+                  Total: Bs{order.total.toFixed(2)}
+                </Text>
               </View>
 
-              {state.user?.role === "admin" && (
-                <View style={styles.actionButtons}>
-                  {order.status === "pendiente" && (
-                    <>
+              <View style={styles.footerRow2}>
+                {state.user?.role === "admin" && (
+                  <>
+                    {order.status === "pendiente" && (
+                      <>
+                        <TouchableOpacity
+                          style={styles.confirmButton}
+                          onPress={() => updateOrderStatus(order._id, "confirmado")}
+                        >
+                          <Text style={styles.buttonText}>Confirmar</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.cancelButton}
+                          onPress={() => cancelOrder(order._id)}
+                        >
+                          <Text style={styles.buttonText}>Cancelar</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+
+                    {order.status === "confirmado" && (
                       <TouchableOpacity
-                        style={styles.confirmButton}
-                        onPress={() => updateOrderStatus(order._id, "confirmado")}
+                        style={styles.preparingButton}
+                        onPress={() => updateOrderStatus(order._id, "preparando")}
                       >
-                        <Text style={styles.buttonText}>Confirmar</Text>
+                        <Text style={styles.buttonText}>Preparando</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.cancelButton} onPress={() => cancelOrder(order._id)}>
-                        <Text style={styles.buttonText}>Cancelar</Text>
+                    )}
+
+                    {order.status === "preparando" && (
+                      <TouchableOpacity
+                        style={styles.readyButton}
+                        onPress={() => updateOrderStatus(order._id, "listo")}
+                      >
+                        <Text style={styles.buttonText}>Listo</Text>
                       </TouchableOpacity>
-                    </>
-                  )}
+                    )}
 
-                  {order.status === "confirmado" && (
-                    <TouchableOpacity
-                      style={styles.preparingButton}
-                      onPress={() => updateOrderStatus(order._id, "preparando")}
-                    >
-                      <Text style={styles.buttonText}>Preparando</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {order.status === "preparando" && (
-                    <TouchableOpacity style={styles.readyButton} onPress={() => updateOrderStatus(order._id, "listo")}>
-                      <Text style={styles.buttonText}>Listo</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {order.status === "listo" && (
-                    <TouchableOpacity
-                      style={styles.deliveredButton}
-                      onPress={() => updateOrderStatus(order._id, "entregado")}
-                    >
-                      <Text style={styles.buttonText}>Entregado</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-              <TouchableOpacity style={styles.viewMoreButton} onPress={() => handleViewDetails(order)}>
-                <Text style={styles.viewMoreButtonText}>Ver más</Text>
-                <Ionicons name="chevron-forward" size={16} color="#795548" />
-              </TouchableOpacity>
+                    {order.status === "listo" && (
+                      <TouchableOpacity
+                        style={styles.deliveredButton}
+                        onPress={() => updateOrderStatus(order._id, "entregado")}
+                      >
+                        <Text style={styles.buttonText}>Entregado</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
+                <TouchableOpacity style={styles.viewMoreButton} onPress={() => handleViewDetails(order)}>
+                  <Text style={styles.viewMoreButtonText}>Ver más</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#795548" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         ))}
@@ -529,6 +540,7 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     marginBottom: 16,
+    maxHeight: 40,
   },
   filterButton: {
     paddingHorizontal: 16,
@@ -645,11 +657,21 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   orderFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
+  flexDirection: "column",
+  marginTop: 10,
+  gap: 10,
+},
+footerRow1: {
+  flexDirection: "row",
+  justifyContent: "flex-start",
+  alignItems: "center",
+},
+footerRow2: {
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  gap: 10,
+},
   orderTotal: {
     fontSize: 16,
     fontWeight: "bold",
