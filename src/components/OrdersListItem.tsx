@@ -27,7 +27,7 @@ export function OrdersListItem({
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.leftContent}>
         <View style={styles.titleRow}>
-          <Text style={styles.orderId}>Pedido #{order._id?.substring(0, 8)}</Text>
+          <Text style={styles.orderId}>Pedido #{order._id?.substring(0, 8)}...</Text>
           <View style={[styles.statusBadge, { backgroundColor: statusBgColor }]}>
             <Text style={[styles.statusText, { color: statusColor }]}>
               {order.status?.toUpperCase()}

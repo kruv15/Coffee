@@ -294,7 +294,7 @@ export default function OrdersScreen() {
               
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>ID Pedido:</Text>
-                <Text style={styles.detailValue}>{selectedOrder?._id?.substring(0, 8)}...</Text>
+                <Text style={styles.detailValue}>{selectedOrder?._id?.substring(0, 24)}</Text>
               </View>
 
               <View style={styles.detailRow}>
@@ -638,8 +638,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: "90%",
-    paddingBottom: 20,
+    height: "90%", 
+    paddingBottom: 5,
+    justifyContent: "space-between",
   },
   detailHeader: {
     flexDirection: "row",
@@ -656,7 +657,7 @@ const styles = StyleSheet.create({
     color: "#222",
   },
   detailScroll: {
-    maxHeight: "75%",
+    flex: 1,
     paddingHorizontal: 20,
     paddingVertical: 16,
   },

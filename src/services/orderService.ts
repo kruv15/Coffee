@@ -60,7 +60,7 @@ export const orderService = {
       })
 
       const data = await response.json()
-      console.log("📡 OrderService: Respuesta mis pedidos:", response.status, JSON.stringify(data, null, 2))
+      console.log("OrderService: Respuesta mis pedidos:", response.status, JSON.stringify(data, null, 2))
 
       if (response.ok && data.success) {
         return {
