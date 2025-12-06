@@ -235,7 +235,7 @@ export default function AdminScreen() {
       </Modal>
 
       <View style={styles.statsContainer}>
-        <Text style={styles.statsText}>{loading ? "Cargando..." : `${products.length} productos encontrados`}</Text>
+        <Text style={styles.statsText}>{loading ? "Cargando..." : `${products.length} Productos Encontrados`}</Text>
         <TouchableOpacity onPress={() => loadProducts(true)} style={styles.refreshButton}>
           <Ionicons name="refresh" size={20} color="#795548" />
         </TouchableOpacity>

@@ -22,6 +22,7 @@ interface ProductDetailModalProps {
 export function ProductDetailModal({ visible, product, onClose, onAddToCart }: ProductDetailModalProps) {
   const [selectedPack, setSelectedPack] = useState<string>('250g');
   const [quantity, setQuantity] = useState<number>(1);
+  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -68,11 +69,24 @@ export function ProductDetailModal({ visible, product, onClose, onAddToCart }: P
     if (selectedPackData) {
       onAddToCart({
         ...product,
+        stock: product.stock ?? 0,
         pack: selectedPack,
         price: Number.parseFloat(selectedPackData.price),
         quantity,
       });
       onClose();
+    }
+  };
+
+  const startHold = (callback: () => void) => {
+    callback();
+    intervalRef.current = setInterval(callback, 120); // Repite
+  };
+
+  const stopHold = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
   };
 
@@ -128,15 +142,32 @@ export function ProductDetailModal({ visible, product, onClose, onAddToCart }: P
 
           <View style={styles.quantityContainer}>
             <TouchableOpacity
-              style={styles.qtyButton}
-              onPress={() => setQuantity((q: number) => Math.max(1, q - 1))}
+              style={[
+                styles.qtyButton,
+                quantity === 1 && { opacity: 0.4 }
+              ]}
+              disabled={quantity === 1}
+              onPress={() => setQuantity(q => Math.max(1, q - 1))}
+              onPressIn={() => {
+                if (quantity > 1) startHold(() => setQuantity(q => Math.max(1, q - 1)));
+              }}
+              onPressOut={stopHold}
             >
               <Ionicons name="remove" size={20} color="#222" />
             </TouchableOpacity>
             <Text style={styles.quantityText}>{quantity}</Text>
             <TouchableOpacity
-              style={styles.qtyButton}
-              onPress={() => setQuantity((q: number) => q + 1)}
+              style={[
+                styles.qtyButton,
+                quantity >= (product.stock ?? 0) && { opacity: 0.4 }
+              ]}
+              disabled={quantity >= (product.stock ?? 0)}
+              onPress={() => setQuantity(q => Math.min(product.stock ?? 0, q + 1))}
+              onPressIn={() => {
+                if (quantity < (product.stock ?? 0))
+                  startHold(() => setQuantity(q => Math.min(product.stock ?? 0, q + 1)));
+              }}
+              onPressOut={stopHold}
             >
               <Ionicons name="add" size={20} color="#222" />
             </TouchableOpacity>

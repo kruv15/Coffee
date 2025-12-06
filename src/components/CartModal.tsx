@@ -25,6 +25,19 @@ export function CartModal({ visible, cart, onClose, onUpdateQuantity, onRemoveIt
   const discounts = 0;
   const total = items - discounts;
   const totalItems = cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
+  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const startHold = (callback: () => void) => {
+    callback();
+    intervalRef.current = setInterval(callback, 120);
+  };
+
+  const stopHold = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
 
   const handleCheckout = () => {
     if (cart.length === 0) {
@@ -79,15 +92,33 @@ export function CartModal({ visible, cart, onClose, onUpdateQuantity, onRemoveIt
                   </View>
                   <View style={styles.quantityControls}>
                     <TouchableOpacity
-                      style={styles.qtyButton}
+                      style={[
+                        styles.qtyButton,
+                        item.quantity === 1 && { opacity: 0.4 }
+                      ]}
+                      disabled={item.quantity === 1}
                       onPress={() => onUpdateQuantity(item, Math.max(1, item.quantity - 1))}
+                      onPressIn={() => {
+                        if (item.quantity > 1)
+                          startHold(() => onUpdateQuantity(item, item.quantity - 1));
+                      }}
+                      onPressOut={stopHold}
                     >
                       <Ionicons name="remove" size={18} color="#222" />
                     </TouchableOpacity>
                     <Text style={styles.quantityText}>{item.quantity}</Text>
                     <TouchableOpacity
-                      style={styles.qtyButton}
+                      style={[
+                        styles.qtyButton,
+                        item.quantity >= item.stock && { opacity: 0.4 }
+                      ]}
+                      disabled={item.quantity >= item.stock}
                       onPress={() => onUpdateQuantity(item, item.quantity + 1)}
+                      onPressIn={() => {
+                        if (item.quantity < item.stock)
+                          startHold(() => onUpdateQuantity(item, item.quantity + 1));
+                      }}
+                      onPressOut={stopHold}
                     >
                       <Ionicons name="add" size={18} color="#222" />
                     </TouchableOpacity>

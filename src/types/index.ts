@@ -16,8 +16,13 @@ export interface Product {
 }
 
 export interface CartItem extends Product {
+  id: string
+  name: string
+  image: string
+  price: number
   pack: string
   quantity: number
+  stock: number
 }
 
 export interface Pack {
