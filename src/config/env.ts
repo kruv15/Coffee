@@ -1,0 +1,13 @@
+export const ENV = {
+  API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || "",
+  CHAT_API_URL: process.env.EXPO_PUBLIC_CHAT_API_URL || "",
+  FILE_UPLOAD_URL: process.env.EXPO_PUBLIC_FILE_UPLOAD_URL || "",
+  WEBSOCKET_URL: process.env.EXPO_PUBLIC_WEBSOCKET_URL || "",
+  GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+
+  // Medios Sociales
+  TIKTOK_USERNAME: process.env.EXPO_PUBLIC_TIKTOK_USERNAME || "",
+  TIKTOK_URL: process.env.EXPO_PUBLIC_TIKTOK_URL || "",
+  INSTAGRAM_USERNAME: process.env.EXPO_PUBLIC_INSTAGRAM_USERNAME || "",
+  INSTAGRAM_URL: process.env.EXPO_PUBLIC_INSTAGRAM_URL || "",
+}

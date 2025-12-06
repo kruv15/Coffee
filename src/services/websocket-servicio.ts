@@ -1,4 +1,5 @@
 import type { EventoWebSocket } from "../types/chat"
+import { ENV } from "../config/env"
 
 type ManejadorMensaje = (evento: EventoWebSocket) => void
 
@@ -17,8 +18,8 @@ export class ServicioWebSocket {
   private enConexion = false
   private urlServidor: string
 
-  constructor(urlServidor: string, configuracion?: Partial<ConfiguracionReconexion>) {
-    this.urlServidor = urlServidor
+  constructor(configuracion?: Partial<ConfiguracionReconexion>) {
+    this.urlServidor = ENV.WEBSOCKET_URL
     this.configuracion = {
       intentosMaximos: configuracion?.intentosMaximos ?? 5,
       retardoInicial: configuracion?.retardoInicial ?? 1000,
@@ -247,5 +248,4 @@ export class ServicioWebSocket {
   }
 }
 
-// Instancia singleton
-export const servicioWebSocket = new ServicioWebSocket("wss://back-coffee.onrender.com")
+export const servicioWebSocket = new ServicioWebSocket()

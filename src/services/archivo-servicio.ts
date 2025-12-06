@@ -1,8 +1,9 @@
 import * as FileSystem from "expo-file-system/legacy"
 import type { Archivo } from "../types/chat"
 import { validarArchivoFrontend, normalizarArchivoParaSubir } from "../utils/validador-archivos-mejorado"
+import { ENV } from "../../src/config/env"
 
-const URL_UPLOAD = "https://back-coffee.onrender.com/api/chat/subir-archivo"
+const URL_UPLOAD = ENV.FILE_UPLOAD_URL
 
 interface ResultadoSubida {
   exito: boolean

@@ -3,6 +3,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import React, { createContext, useContext, useEffect, useReducer } from "react"
 import type { AuthState, User } from "../types"
+import { ENV } from "../../src/config/env"
 
 interface AuthContextType {
   state: AuthState
@@ -52,7 +53,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState)
 
   const forceRefresh = () => {
-    console.log("🔄 Forcing app refresh...")
     dispatch({ type: "LOGOUT" })
   }
 
@@ -63,45 +63,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       dispatch({ type: "LOGIN_SUCCESS", payload: { user, token } })
 
-      console.log("✅ User logged in successfully:", user)
     } catch (error) {
-      console.error("❌ Error saving login data:", error)
+      console.error("Error saving login data:", error)
     }
   }
 
   const logout = async () => {
     try {
-      console.log("🔄 Starting logout process...")
-      console.log("🔍 Current state before logout:", state)
-
       await AsyncStorage.clear()
-      console.log("✅ All AsyncStorage cleared")
 
       dispatch({ type: "LOGOUT" })
-      console.log("✅ State updated - User logged out")
 
       const allKeys = await AsyncStorage.getAllKeys()
-      console.log("🔍 Remaining storage keys:", allKeys)
+      console.log("Remaining storage keys:", allKeys)
 
       setTimeout(() => {
-        console.log("🔄 Forcing state refresh...")
         dispatch({ type: "LOGOUT" })
       }, 100)
 
-      console.log("✅ Logout completed successfully")
     } catch (error) {
-      console.error("❌ Error during logout:", error)
+      console.error("Error during logout:", error)
       dispatch({ type: "LOGOUT" })
     }
   }
 
   const checkAuthState = async () => {
     try {
-      console.log("🔍 Checking auth state...")
       const token = await AsyncStorage.getItem("userToken")
       const userData = await AsyncStorage.getItem("userData")
 
-      console.log("📋 Storage contents:", {
+      console.log("Storage contents:", {
         hasToken: !!token,
         hasUserData: !!userData,
         tokenPreview: token ? token.substring(0, 10) + "..." : "null",
@@ -111,13 +102,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (token && userData) {
         const user = JSON.parse(userData)
         dispatch({ type: "RESTORE_SESSION", payload: { user, token } })
-        console.log("✅ Session restored for user:", user.email)
       } else {
-        console.log("❌ No valid session found in storage")
         dispatch({ type: "LOGOUT" })
       }
     } catch (error) {
-      console.error("❌ Error checking auth state:", error)
+      console.error("Error checking auth state:", error)
       dispatch({ type: "LOGOUT" })
     }
   }
@@ -136,19 +125,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       })
 
-      console.log("✅ Login with token successful")
       return true
     } catch (error) {
-      console.error("❌ Error saving token:", error)
+      console.error("Error saving token:", error)
       return false
     }
   }
 
   const loginWithApi = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log("🔑 Attempting login with:", { emailUsr: email })
+      console.log("Attempting login with:", { emailUsr: email })
 
-      const response = await fetch("https://back-coffee.onrender.com/api/usuarios/login", {
+      const response = await fetch(`${ENV.API_BASE_URL}/usuarios/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -160,12 +148,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
 
       const data = await response.json()
-      console.log("📡 Full API Response:", JSON.stringify(data, null, 2))
-      console.log("📊 Response status:", response.status)
 
       if (response.ok && (data.success || data.token || data.usuario)) {
         // Log the exact structure we're receiving
-        console.log("🔍 Analyzing API response structure:")
+        console.log("Analyzing API response structure:")
         console.log("- data.usuario:", data.usuario)
         console.log("- data.data?.usuario:", data.data?.usuario)
 
@@ -174,32 +160,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (data.usuario) {
           apiUser = data.usuario
-          console.log("✅ Found user in data.usuario")
         } else if (data.data?.usuario) {
           apiUser = data.data.usuario
-          console.log("✅ Found user in data.data.usuario")
         } else if (data.user) {
           apiUser = data.user
-          console.log("✅ Found user in data.user")
         } else {
-          console.log("⚠️ No user object found in standard locations")
-          apiUser = data // Sometimes the user data is at the root level
+          apiUser = data 
         }
 
-        console.log("👤 Extracted user data:", JSON.stringify(apiUser, null, 2))
-        console.log("🔑 roleUsr field value:", apiUser?.roleUsr, "Type:", typeof apiUser?.roleUsr)
+        console.log("Extracted user data:", JSON.stringify(apiUser, null, 2))
+        console.log("roleUsr field value:", apiUser?.roleUsr, "Type:", typeof apiUser?.roleUsr)
 
         // Determine role based on roleUsr field
-        let userRole: "admin" | "user" = "user" // Default to user
+        let userRole: "admin" | "user" = "user"
 
         if (apiUser?.roleUsr === true) {
           userRole = "admin"
-          console.log("✅ User is ADMIN (roleUsr: true)")
         } else if (apiUser?.roleUsr === false) {
           userRole = "user"
-          console.log("✅ User is REGULAR USER (roleUsr: false)")
         } else {
-          console.log("⚠️ roleUsr field not found or invalid, defaulting to user")
           console.log("Available fields in apiUser:", Object.keys(apiUser || {}))
         }
 
@@ -214,24 +193,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const token = data.token || data.data?.token || "login-token-" + Date.now()
 
-        console.log("🎯 Final user object:", JSON.stringify(user, null, 2))
-        console.log("🔐 Token:", token.substring(0, 20) + "...")
+        console.log("Final user object:", JSON.stringify(user, null, 2))
+        console.log("Token:", token.substring(0, 20) + "...")
 
         await login(user, token)
         return true
       } else {
-        console.error("❌ Login failed:", data)
+        console.error("Login failed:", data)
         return false
       }
     } catch (error) {
-      console.error("❌ API login error:", error)
+      console.error("API login error:", error)
       return false
     }
   }
 
   const loginAsAdmin = async (): Promise<void> => {
     try {
-      console.log("🔑 Starting admin login...")
+      console.log("Starting admin login...")
 
       const adminUser: User = {
         id: "admin-001",
@@ -245,10 +224,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const adminToken = "admin-token-" + Date.now()
       await login(adminUser, adminToken)
 
-      console.log("✅ Admin login successful with role:", adminUser.role)
-      console.log("📋 Admin user data:", adminUser)
     } catch (error) {
-      console.error("❌ Error in admin login:", error)
+      console.error("Error in admin login:", error)
       throw error
     }
   }

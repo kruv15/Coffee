@@ -1,6 +1,7 @@
 import type { Asunto, Conversacion, Mensaje, Archivo } from "../types/chat"
+import { ENV } from "../../src/config/env"
 
-const URL_API = "https://back-coffee.onrender.com/api/chat"
+const URL_API = ENV.CHAT_API_URL
 
 export class ServicioAPIChat {
   async obtenerHistorial(

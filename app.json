@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "icon": "./assets/images/icon.png"
+      "icon": "./assets/images/icon.png",
+      "config": {
+        "googleMapsApiKey": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -20,10 +23,12 @@
       "edgeToEdgeEnabled": true,
       "package": "",
       "icon": "./assets/images/icon.png",
-      "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ]
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "INTERNET", "ACCESS_NETWORK_STATE"],
+      "config": {
+        "googleMaps": {
+          "apiKey": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -39,6 +44,13 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Esta aplicación necesita acceso a tu ubicación para seleccionar la dirección de entrega.",
+          "locationWhenInUsePermission": "Esta aplicación necesita acceso a tu ubicación para seleccionar la dirección de entrega."
         }
       ],
       "expo-maps",

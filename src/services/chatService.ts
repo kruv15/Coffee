@@ -1,11 +1,12 @@
   // Servicio de chat con WebSocket
-  import type { Asunto, Conversacion, Mensaje, WebSocketEvent, Archivo } from "../types/chat"
+  import type { Asunto, Conversacion, Mensaje, EventoWebSocket, Archivo } from "../types/chat"
   import * as FileSystem from "expo-file-system/legacy"
+  import { ENV } from "../../src/config/env"
 
-  const WS_URL = "wss://back-coffee.onrender.com"
-  const API_URL = "https://back-coffee.onrender.com/api/chat"
+  const WS_URL = ENV.WEBSOCKET_URL
+  const API_URL = ENV.CHAT_API_URL
 
-  type MessageHandler = (event: WebSocketEvent) => void
+  type MessageHandler = (event: EventoWebSocket) => void
 
   class ChatService {
     private ws: WebSocket | null = null
@@ -52,7 +53,7 @@
 
           this.ws.onmessage = (event) => {
             try {
-              const data: WebSocketEvent = JSON.parse(event.data)
+              const data: EventoWebSocket = JSON.parse(event.data)
               console.log("[ChatService] Mensaje recibido:", data.tipo)
               this.handleMessage(data)
             } catch (error) {
@@ -117,7 +118,7 @@
     }
 
     // Enviar mensaje por WebSocket
-    private send(data: WebSocketEvent) {
+    private send(data: EventoWebSocket) {
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify(data))
         console.log("[ChatService] Mensaje enviado:", data.tipo)
@@ -204,7 +205,7 @@
     }
 
     // Manejar mensajes recibidos
-    private handleMessage(event: WebSocketEvent) {
+    private handleMessage(event: EventoWebSocket) {
       const handlers = this.messageHandlers.get(event.tipo)
       if (handlers) {
         handlers.forEach((handler) => handler(event))
@@ -309,10 +310,8 @@
 
     async subirArchivo(archivo: any): Promise<Archivo> {
       try {
-        console.log("📤 Subiendo archivo con FileSystem:", archivo.uri);
-
         const uploadResult = await FileSystem.uploadAsync(
-          "https://back-coffee.onrender.com/api/chat/subir-archivo",
+          ENV.FILE_UPLOAD_URL,
           archivo.uri,
           {
             fieldName: "archivo",
@@ -327,7 +326,6 @@
         );
 
         const data = JSON.parse(uploadResult.body);
-        console.log("📦 Respuesta backend:", data);
 
         if (data.success && data.archivo) return data.archivo;
         throw new Error(data.message || "Error subiendo archivo");

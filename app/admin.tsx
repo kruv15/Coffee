@@ -19,6 +19,7 @@ import { AddProductModal } from "../src/components/AddProductModal"
 import { useAuth } from "../src/context/AuthContext"
 import { productService } from "../src/services/api"
 import type { Product } from "../src/types"
+import { ENV } from "../src/config/env"
 
 export default function AdminScreen() {
   const { state } = useAuth()
@@ -29,52 +30,36 @@ export default function AdminScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [dropdownVisible, setDropdownVisible] = useState(false)
 
-  // Load products from database
+  // Cargar productos desde la API
   const loadProducts = async (showLoading = true) => {
     if (showLoading) setLoading(true)
-
+    
     try {
-      console.log("🔄 Admin: Loading ALL products from database...")
-
-      const response = await fetch("https://back-coffee.onrender.com/api/productos", {
+      const response = await fetch(`${ENV.API_BASE_URL}/productos`, {
         method: "GET",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
       })
-
-      console.log("📡 Admin API Response status:", response.status)
-
       if (response.ok) {
         const data = await response.json()
-        console.log("📦 Admin API response data:", JSON.stringify(data, null, 2))
-
         // Extraer productos de la estructura correcta según las imágenes del debug
         let productsArray = []
 
         if (data && data.data && data.data.productos && Array.isArray(data.data.productos)) {
           productsArray = data.data.productos
-          console.log("✅ Admin: Found products in data.data.productos:", productsArray.length)
         } else if (data && data.productos && Array.isArray(data.productos)) {
           productsArray = data.productos
-          console.log("✅ Admin: Found products in data.productos:", productsArray.length)
         } else if (Array.isArray(data)) {
           productsArray = data
-          console.log("✅ Admin: Found products as direct array:", productsArray.length)
         } else {
-          console.log("❌ Admin: No products array found in response structure")
-          console.log("📦 Admin Available keys:", Object.keys(data || {}))
           setProducts([])
           return
         }
 
-        console.log("📋 Admin Products array to process:", productsArray)
-
         if (Array.isArray(productsArray) && productsArray.length > 0) {
           const formattedProducts: Product[] = productsArray.map((product: any, index: number) => {
-            console.log(`🔄 Admin Processing product ${index + 1}:`, product)
-
             const formattedProduct = {
               id: product._id || product.id || `temp_${Date.now()}_${index}`,
               name: product.nomProd || product.nombre || product.name || "Producto sin nombre",
@@ -84,27 +69,19 @@ export default function AdminScreen() {
               stock: Number(product.stock || 0),
               category: product.categoria || product.category || "cafe",
             }
-
-            console.log(`✅ Admin Formatted product ${index + 1}:`, formattedProduct)
             return formattedProduct
           })
 
-          console.log("✅ Admin: Products formatted successfully:", formattedProducts.length)
-          console.log("📋 Admin All formatted products:", formattedProducts)
           setProducts(formattedProducts)
         } else {
-          console.log("📦 Admin: Empty products array or no products found")
           setProducts([])
         }
       } else {
-        console.log(`❌ Admin: API request failed with status: ${response.status}`)
         const errorText = await response.text()
-        console.log("❌ Admin Error response:", errorText)
         Alert.alert("Error", "No se pudieron cargar los productos de la base de datos")
         setProducts([])
       }
     } catch (error) {
-      console.error("❌ Admin: Error loading products:", error)
       Alert.alert("Error", "Error de conexión con la base de datos")
       setProducts([])
     } finally {
@@ -136,7 +113,6 @@ export default function AdminScreen() {
           }
 
           try {
-            console.log("🗑️ Deleting product:", productId)
             const result = await productService.deleteProduct(productId, state.token)
 
             if (result.success) {
@@ -146,7 +122,6 @@ export default function AdminScreen() {
               Alert.alert("Error", result.message || "No se pudo eliminar el producto")
             }
           } catch (error) {
-            console.error("❌ Error deleting product:", error)
             Alert.alert("Error", "Error de conexión al eliminar el producto")
           }
         },
@@ -155,19 +130,16 @@ export default function AdminScreen() {
   }
 
   const handleEditProduct = (product: Product) => {
-    console.log("✏️ Editing product:", product.name)
     setEditingProduct(product)
     setAddModalVisible(true)
   }
 
   const handleAddNewProduct = () => {
-    console.log("➕ Adding new product")
     setEditingProduct(null)
     setAddModalVisible(true)
   }
 
   const handleProductCreated = async () => {
-    console.log("✅ Product created/updated - reloading list")
     setAddModalVisible(false)
     setEditingProduct(null)
     // Recargar productos después de crear/actualizar
@@ -177,7 +149,7 @@ export default function AdminScreen() {
   const handleAddProduct = (productData: Omit<Product, "id">) => {
     const newProduct: Product = {
       ...productData,
-      category: productData.category || "cafe", // respetar categoría enviada por el modal
+      category: productData.category || "cafe",
       id: Date.now().toString(),
     }
     setProducts((prev) => [...prev, newProduct])
@@ -188,7 +160,7 @@ export default function AdminScreen() {
   const handleUpdateProduct = (updatedProduct: Product) => {
     const product = {
       ...updatedProduct,
-      category: updatedProduct.category || "cafe", // respetar categoría enviada por el modal
+      category: updatedProduct.category || "cafe",
     }
     setProducts((prev) => prev.map((p) => (p.id === product.id ? product : p)))
     setEditingProduct(null)
@@ -213,7 +185,6 @@ export default function AdminScreen() {
 
   // Debug para verificar el estado de productos
   useEffect(() => {
-    console.log("🔍 Admin Products state changed:", products.length, products)
   }, [products])
 
   return (
@@ -296,10 +267,10 @@ export default function AdminScreen() {
                   source={{ uri: product.image }}
                   style={styles.productImage}
                   onError={(e) => {
-                    console.log("❌ Image load error for product:", product.name, e.nativeEvent.error)
+                    console.log("Image load error for product:", product.name, e.nativeEvent.error)
                   }}
                   onLoad={() => {
-                    console.log("✅ Image loaded for product:", product.name)
+                    console.log("Image loaded for product:", product.name)
                   }}
                 />
                 <View style={styles.productInfo}>

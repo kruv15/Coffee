@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types';
+import { ENV } from "../../src/config/env"
 
-const API_BASE_URL = 'https://back-coffee.onrender.com/api';
+const API_BASE_URL = ENV.CHAT_API_URL;
 
 export interface LoginRequest {
   emailUsr: string;
@@ -27,8 +28,6 @@ export interface AuthResponse {
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     try {
-      console.log('🔑 AuthService: Attempting login for:', credentials.emailUsr);
-      
       const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
         method: 'POST',
         headers: {
@@ -39,7 +38,6 @@ export const authService = {
       });
 
       const data = await response.json();
-      console.log('📡 AuthService: Login response:', response.status, data);
 
       if (response.ok) {
         return {
@@ -53,7 +51,7 @@ export const authService = {
         };
       }
     } catch (error) {
-      console.error('❌ AuthService: Login error:', error);
+      console.error('AuthService: Login error:', error);
       return {
         success: false,
         message: 'Error de conexión'
@@ -63,7 +61,7 @@ export const authService = {
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     try {
-      console.log('📝 AuthService: Attempting registration for:', userData.emailUsr);
+      console.log('AuthService: Attempting registration for:', userData.emailUsr);
       
       const response = await fetch(`${API_BASE_URL}/usuarios/registrar`, {
         method: 'POST',
@@ -75,7 +73,6 @@ export const authService = {
       });
 
       const data = await response.json();
-      console.log('📡 AuthService: Register response:', response.status, data);
 
       if (response.ok) {
         return {
@@ -89,7 +86,7 @@ export const authService = {
         };
       }
     } catch (error) {
-      console.error('❌ AuthService: Register error:', error);
+      console.error('AuthService: Register error:', error);
       return {
         success: false,
         message: 'Error de conexión'
@@ -101,9 +98,9 @@ export const authService = {
     try {
       await AsyncStorage.setItem('userToken', token);
       await AsyncStorage.setItem('userData', JSON.stringify(user));
-      console.log('✅ AuthService: User data saved');
+      console.log('AuthService: User data saved');
     } catch (error) {
-      console.error('❌ AuthService: Error saving user data:', error);
+      console.error('AuthService: Error saving user data:', error);
     }
   },
 
@@ -119,7 +116,7 @@ export const authService = {
       
       return { user: null, token: null };
     } catch (error) {
-      console.error('❌ AuthService: Error getting user data:', error);
+      console.error('AuthService: Error getting user data:', error);
       return { user: null, token: null };
     }
   },
@@ -127,9 +124,9 @@ export const authService = {
   async clearUserData(): Promise<void> {
     try {
       await AsyncStorage.multiRemove(['userToken', 'userData']);
-      console.log('✅ AuthService: User data cleared');
+      console.log('AuthService: User data cleared');
     } catch (error) {
-      console.error('❌ AuthService: Error clearing user data:', error);
+      console.error('AuthService: Error clearing user data:', error);
     }
   },
 
@@ -145,7 +142,7 @@ export const authService = {
 
       return response.ok;
     } catch (error) {
-      console.error('❌ AuthService: Token validation error:', error);
+      console.error('AuthService: Token validation error:', error);
       return false;
     }
   }
