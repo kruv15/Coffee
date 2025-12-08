@@ -37,13 +37,13 @@ export default function CheckoutScreen() {
     coordinates: { latitude: number; longitude: number }
     additionalInfo: string
   }) => {
-    console.log("📍 Dirección seleccionada:", addressData)
+    console.log("Dirección seleccionada:", addressData)
     setDeliveryAddress(addressData)
   }
 
   const sendOrderToChat = async (orderId: string) => {
     try {
-      if (!state.user?.id || !state.isAuthenticated) {
+      if (!state.user?._id || !state.isAuthenticated) {
         console.error("[Checkout] Usuario no autenticado para enviar pedido por chat")
         return false
       }
@@ -51,7 +51,7 @@ export default function CheckoutScreen() {
       console.log("[Checkout] Conectando al WebSocket antes de enviar pedido...")
 
       try {
-        await chatService.connect(state.user.id, "cliente")
+        await chatService.connect(state.user._id, "cliente")
         console.log("[Checkout] WebSocket conectado exitosamente")
       } catch (connectError) {
         console.error("[Checkout] Error conectando WebSocket:", connectError)
@@ -73,7 +73,7 @@ export default function CheckoutScreen() {
       console.log("[Checkout] Enviando pedido por chat:", message)
 
       // Enviar mensaje por el chat de ventas
-      chatService.enviarMensaje(state.user.id, "ventas", message)
+      chatService.enviarMensaje(state.user._id, "ventas", message)
 
       // Desconectar después de enviar
       setTimeout(() => {
@@ -117,29 +117,30 @@ export default function CheckoutScreen() {
 
           try {
             // 1. Crear el pedido en la base de datos primero
-            console.log("🔄 Creating order in database...")
+            console.log("Creating order in database...")
 
             // Preparar datos del pedido para la API
             const orderRequest = {
               productos: cartData.map((item: CartItem) => ({
-                productoId: item.id,
-                cantidad: item.quantity,
+                productoId: item._id,
+                cantidad: item.cantidad,
+                tamano: item.tamano,
               })),
               direccionEntrega: `https://www.google.com/maps?q=${deliveryAddress.coordinates.latitude},${deliveryAddress.coordinates.longitude}`,
               infoAdicional: deliveryAddress.additionalInfo || "",
             }
 
-            console.log("📤 Order request data:", JSON.stringify(orderRequest, null, 2))
+            console.log("Order request data:", JSON.stringify(orderRequest, null, 2))
 
             // Llamar al servicio para crear el pedido
             const orderResponse = await orderService.createOrder(orderRequest, state.token!)
 
-            console.log("📡 Order creation response:", orderResponse)
+            console.log("Order creation response:", orderResponse)
 
             if (orderResponse.success) {
-              console.log("✅ Order created successfully in database")
+              console.log("Order created successfully in database")
 
-              const orderId = orderResponse.data?.pedidos?.[0]?._id || "N/A"
+              const orderId = orderResponse.data?._id || "N/A"
 
               const sentToChat = await sendOrderToChat(orderId)
 
@@ -173,7 +174,7 @@ export default function CheckoutScreen() {
               }
             } else {
               // Error al crear el pedido en la base de datos
-              console.error("❌ Failed to create order in database:", orderResponse.message)
+              console.error("Failed to create order in database:", orderResponse.message)
 
               Alert.alert(
                 "Error al Crear Pedido",
@@ -189,7 +190,7 @@ export default function CheckoutScreen() {
               )
             }
           } catch (error) {
-            console.error("❌ Error creating order:", error)
+            console.error("Error creating order:", error)
 
             Alert.alert(
               "Error de Conexión",
@@ -243,10 +244,10 @@ export default function CheckoutScreen() {
                 <Text style={styles.sectionTitle}>Información del Cliente</Text>
                 <View style={styles.userInfo}>
                   <Text style={styles.userName}>
-                    {state.user.name} {state.user.lastName || ""}
+                    {state.user.nombreUsr} {state.user.apellidoUsr || ""}
                   </Text>
-                  <Text style={styles.userEmail}>{state.user.email}</Text>
-                  {state.user.phone && <Text style={styles.userPhone}>{state.user.phone}</Text>}
+                  <Text style={styles.userEmail}>{state.user.emailUsr}</Text>
+                  {state.user.celUsr && <Text style={styles.userPhone}>{state.user.celUsr}</Text>}
                 </View>
               </View>
             )}
@@ -256,13 +257,13 @@ export default function CheckoutScreen() {
               <Text style={styles.sectionTitle}>Resumen del Pedido</Text>
               {cartData.map((item: CartItem, index: number) => (
                 <View key={index} style={styles.orderItem}>
-                  <Image source={{ uri: item.image }} style={styles.itemImage} />
+                  <Image source={{ uri: item.imagen }} style={styles.itemImage} />
                   <View style={styles.itemDetails}>
-                    <Text style={styles.itemName}>{item.name}</Text>
+                    <Text style={styles.itemName}>{item.nomProd}</Text>
                     <Text style={styles.itemInfo}>
-                      {item.pack} • Cantidad: {item.quantity}
+                      {item.tamano} • Cantidad: {item.cantidad}
                     </Text>
-                    <Text style={styles.itemPrice}>Bs{(item.price * item.quantity).toFixed(2)}</Text>
+                    <Text style={styles.itemPrice}>Bs{(item.precioProd * item.cantidad).toFixed(2)}</Text>
                   </View>
                 </View>
               ))}
@@ -296,7 +297,9 @@ export default function CheckoutScreen() {
                   )}
 
                   {deliveryAddress.additionalInfo && (
-                    <Text style={styles.additionalInfoText}>Información adicional: {deliveryAddress.additionalInfo}</Text>
+                    <Text style={styles.additionalInfoText}>
+                      Información adicional: {deliveryAddress.additionalInfo}
+                    </Text>
                   )}
 
                   <TouchableOpacity style={styles.changeAddressButton} onPress={() => setMapVisible(true)}>
@@ -547,5 +550,5 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",
-  }
+  },
 })

@@ -72,7 +72,7 @@ export function UserProfileModal({ visible, onClose }: UserProfileModalProps) {
     return null;
   }
 
-  console.log('✅ UserProfileModal: Rendering for user:', state.user.email);
+  console.log('✅ UserProfileModal: Rendering for user:', state.user.emailUsr);
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -93,28 +93,28 @@ export function UserProfileModal({ visible, onClose }: UserProfileModalProps) {
               <Ionicons name="mail-outline" size={24} color="#666" />
               <View style={styles.emailInfo}>
                 <Text style={styles.emailLabel}>Email</Text>
-                <Text style={styles.emailText}>{state.user.email}</Text>
+                <Text style={styles.emailText}>{state.user.emailUsr}</Text>
               </View>
             </View>
 
-            {state.user.name && (
+            {state.user.nombreUsr && (
               <View style={styles.emailContainer}>
                 <Ionicons name="person-outline" size={24} color="#666" />
                 <View style={styles.emailInfo}>
                   <Text style={styles.emailLabel}>Nombre</Text>
                   <Text style={styles.emailText}>
-                    {state.user.lastName ? `${state.user.name} ${state.user.lastName}` : state.user.name}
+                    {state.user.apellidoUsr ? `${state.user.nombreUsr} ${state.user.apellidoUsr}` : state.user.nombreUsr}
                   </Text>
                 </View>
               </View>
             )}
 
-            {state.user.phone && (
+            {state.user.celUsr && (
               <View style={styles.emailContainer}>
                 <Ionicons name="call-outline" size={24} color="#666" />
                 <View style={styles.emailInfo}>
                   <Text style={styles.emailLabel}>Teléfono</Text>
-                  <Text style={styles.emailText}>{state.user.phone}</Text>
+                  <Text style={styles.emailText}>{state.user.celUsr}</Text>
                 </View>
               </View>
             )}
@@ -195,5 +195,3 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
-
-

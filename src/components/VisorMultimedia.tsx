@@ -143,6 +143,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 0,
   },
+  fondoModal: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   contenedorImagenAmpliada: {
     flex: 1,
     width: "100%",

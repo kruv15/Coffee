@@ -44,7 +44,7 @@ export default function ChatScreen() {
 
   // Custom hooks
   const { conectado, cargando, error, registrarManejador, desregistrarManejador } = useChatConexion({
-    usuarioId: state.user?.id || "",
+    usuarioId: state.user?._id || "",
     tipoUsuario: "cliente",
     enHabilitado: !!tipoChat && !!state.isAuthenticated,
   })
@@ -65,10 +65,10 @@ export default function ChatScreen() {
 
   // Cargar asunto activo si es atención al cliente
   useEffect(() => {
-    if (tipoChat === "atencion_cliente" && state.user?.id && !cargando) {
+    if (tipoChat === "atencion_cliente" && state.user?._id && !cargando) {
       cargarAsuntoActivo()
     }
-  }, [tipoChat, state.user?.id, cargando])
+  }, [tipoChat, state.user?._id, cargando])
 
   // Registrar manejadores de eventos WebSocket
   useEffect(() => {
@@ -82,9 +82,9 @@ export default function ChatScreen() {
     registrarManejador("error", manejarError)
 
     // Solicitar historial inicial
-    if (state.user?.id && tipoChat) {
+    if (state.user?._id && tipoChat) {
       servicioWebSocket.solicitarHistorial(
-        state.user.id,
+        state.user._id,
         tipoChat,
         tipoChat === "atencion_cliente" ? asuntoActual?.id : undefined,
       )
@@ -98,13 +98,13 @@ export default function ChatScreen() {
       desregistrarManejador("asunto_resuelto")
       desregistrarManejador("error")
     }
-  }, [conectado, registrarManejador, desregistrarManejador, state.user?.id, tipoChat, asuntoActual?.id])
+  }, [conectado, registrarManejador, desregistrarManejador, state.user?._id, tipoChat, asuntoActual?.id])
 
   const cargarAsuntoActivo = async () => {
-    if (!state.user?.id) return
+    if (!state.user?._id) return
 
     try {
-      const asunto = await servicioAPIChat.obtenerAsuntoActivo(state.user.id)
+      const asunto = await servicioAPIChat.obtenerAsuntoActivo(state.user._id)
       if (asunto) {
         setAsuntoActual(asunto)
       } else {
@@ -186,11 +186,11 @@ export default function ChatScreen() {
   }
 
   const enviarMensajeSimple = () => {
-    if (!inputTexto.trim() || !state.user?.id || !tipoChat) return
+    if (!inputTexto.trim() || !state.user?._id || !tipoChat) return
 
     const mensajeTemporal: Mensaje = {
       id: `temp_${Date.now()}`,
-      usuarioId: state.user.id,
+      usuarioId: state.user._id,
       tipoChat,
       asuntoId: tipoChat === "atencion_cliente" ? asuntoActual?.id || null : null,
       contenido: inputTexto.trim(),
@@ -203,7 +203,7 @@ export default function ChatScreen() {
     desplazarAlFinal()
 
     servicioWebSocket.enviarMensaje(
-      state.user.id,
+      state.user._id,
       tipoChat,
       inputTexto.trim(),
       tipoChat === "atencion_cliente" ? asuntoActual?.id : undefined,
@@ -213,7 +213,7 @@ export default function ChatScreen() {
   }
 
   const enviarMensajeConArchivosHandler = async () => {
-    if (!state.user?.id || !tipoChat || (archivosSeleccionados.length === 0 && !inputTexto.trim())) {
+    if (!state.user?._id || !tipoChat || (archivosSeleccionados.length === 0 && !inputTexto.trim())) {
       return
     }
 
@@ -229,7 +229,7 @@ export default function ChatScreen() {
 
       const mensajeTemporal: Mensaje = {
         id: idMensajeTemp,
-        usuarioId: state.user.id,
+        usuarioId: state.user._id,
         tipoChat,
         asuntoId: tipoChat === "atencion_cliente" ? asuntoActual?.id || null : null,
         contenido: inputTexto.trim() || "",
@@ -245,7 +245,7 @@ export default function ChatScreen() {
       // Enviar mensaje con archivos subidos correctamente
       if (archivosSubidos.length > 0 || inputTexto.trim()) {
         servicioWebSocket.enviarMensajeConArchivos(
-          state.user.id,
+          state.user._id,
           tipoChat,
           inputTexto.trim() || "",
           archivosSubidos,
@@ -270,16 +270,15 @@ export default function ChatScreen() {
   }
 
   const crearAsunto = () => {
-    if (!tituloAsunto.trim() || !descripcionAsunto.trim() || !state.user?.id) {
+    if (!tituloAsunto.trim() || !descripcionAsunto.trim() || !state.user?._id) {
       Alert.alert("Error", "Por favor completa todos los campos")
       return
     }
 
-    servicioWebSocket.crearAsunto(state.user.id, tituloAsunto.trim(), descripcionAsunto.trim())
+    servicioWebSocket.crearAsunto(state.user._id, tituloAsunto.trim(), descripcionAsunto.trim())
     setTituloAsunto("")
     setDescripcionAsunto("")
   }
-
 
   if (!state.isAuthenticated) {
     return (
@@ -794,5 +793,5 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",
-  }
+  },
 })

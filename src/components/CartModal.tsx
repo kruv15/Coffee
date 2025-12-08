@@ -21,15 +21,16 @@ interface CartModalProps {
 }
 
 export function CartModal({ visible, cart, onClose, onUpdateQuantity, onRemoveItem }: CartModalProps) {
-  const items = cart.reduce((sum: number, item: CartItem) => sum + item.price * item.quantity, 0);
+  const items = cart.reduce((sum: number, item: CartItem) => sum + item.precioProd * item.cantidad, 0);
   const discounts = 0;
   const total = items - discounts;
-  const totalItems = cart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
-  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const totalItems = cart.reduce((sum: number, item: CartItem) => sum + item.cantidad, 0);
+  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startHold = (callback: () => void) => {
-    callback();
-    intervalRef.current = setInterval(callback, 120);
+    intervalRef.current = setTimeout(() => {
+      intervalRef.current = setInterval(callback, 120)
+    }, 300)
   };
 
   const stopHold = () => {
@@ -83,40 +84,40 @@ export function CartModal({ visible, cart, onClose, onUpdateQuantity, onRemoveIt
               </View>
             ) : (
               cart.map((item: CartItem) => (
-                <View key={`${item.id}-${item.pack}`} style={styles.cartItem}>
-                  <Image source={{ uri: item.image }} style={styles.itemImage} />
+                <View key={`${item._id}-${item.tamano}`} style={styles.cartItem}>
+                  <Image source={{ uri: item.imagen }} style={styles.itemImage} />
                   <View style={styles.itemInfo}>
-                    <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
-                    <Text style={styles.itemDetails}>{`${item.pack} • Granos`}</Text>
-                    <Text style={styles.itemPrice}>{`Bs${item.price.toFixed(2)}`}</Text>
+                    <Text style={styles.itemName} numberOfLines={2}>{item.nomProd}</Text>
+                    <Text style={styles.itemDetails}>{`${item.tamano} • Granos`}</Text>
+                    <Text style={styles.itemPrice}>{`Bs${item.precioProd.toFixed(2)}`}</Text>
                   </View>
                   <View style={styles.quantityControls}>
                     <TouchableOpacity
                       style={[
                         styles.qtyButton,
-                        item.quantity === 1 && { opacity: 0.4 }
+                        item.cantidad === 1 && { opacity: 0.4 }
                       ]}
-                      disabled={item.quantity === 1}
-                      onPress={() => onUpdateQuantity(item, Math.max(1, item.quantity - 1))}
+                      disabled={item.cantidad === 1}
+                      onPress={() => onUpdateQuantity(item, Math.max(1, item.cantidad - 1))}
                       onPressIn={() => {
-                        if (item.quantity > 1)
-                          startHold(() => onUpdateQuantity(item, item.quantity - 1));
+                        if (item.cantidad > 1)
+                          startHold(() => onUpdateQuantity(item, item.cantidad - 1));
                       }}
                       onPressOut={stopHold}
                     >
                       <Ionicons name="remove" size={18} color="#222" />
                     </TouchableOpacity>
-                    <Text style={styles.quantityText}>{item.quantity}</Text>
+                    <Text style={styles.quantityText}>{item.cantidad}</Text>
                     <TouchableOpacity
                       style={[
                         styles.qtyButton,
-                        item.quantity >= item.stock && { opacity: 0.4 }
+                        item.cantidad >= item.stock && { opacity: 0.4 }
                       ]}
-                      disabled={item.quantity >= item.stock}
-                      onPress={() => onUpdateQuantity(item, item.quantity + 1)}
+                      disabled={item.cantidad >= item.stock}
+                      onPress={() => onUpdateQuantity(item, item.cantidad + 1)}
                       onPressIn={() => {
-                        if (item.quantity < item.stock)
-                          startHold(() => onUpdateQuantity(item, item.quantity + 1));
+                        if (item.cantidad < item.stock)
+                          startHold(() => onUpdateQuantity(item, item.cantidad + 1));
                       }}
                       onPressOut={stopHold}
                     >

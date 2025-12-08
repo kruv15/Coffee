@@ -1,4 +1,4 @@
-  // Servicio de chat con WebSocket
+// Servicio de chat con WebSocket
   import type { Asunto, Conversacion, Mensaje, EventoWebSocket, Archivo } from "../types/chat"
   import * as FileSystem from "expo-file-system/legacy"
   import { ENV } from "../../src/config/env"

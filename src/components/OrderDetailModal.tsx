@@ -251,7 +251,7 @@ export function OrderDetailsModal({
                 </View>
               </View>
 
-              {state.user?.role === "admin" && order.status !== "cancelado" && order.status !== "entregado" && (
+              {state.user?.rol === "admin" && order.status !== "cancelado" && order.status !== "entregado" && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Gestión de Estado</Text>
                   <View style={styles.statusManagement}>

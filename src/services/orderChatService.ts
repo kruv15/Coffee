@@ -24,14 +24,14 @@ export const orderChatService = {
     // Información del cliente
     if (user) {
       message += "👤 DATOS DEL CLIENTE:\n"
-      message += `• Nombre: ${user.name}`
-      if (user.lastName) {
-        message += ` ${user.lastName}`
+      message += `• Nombre: ${user.nombreUsr}`
+      if (user.apellidoUsr) {
+        message += ` ${user.apellidoUsr}`
       }
       message += "\n"
-      message += `• Email: ${user.email}\n`
-      if (user.phone) {
-        message += `• Teléfono: ${user.phone}\n`
+      message += `• Email: ${user.emailUsr}\n`
+      if (user.celUsr) {
+        message += `• Teléfono: ${user.celUsr}\n`
       }
       message += "\n"
     }
@@ -44,11 +44,11 @@ export const orderChatService = {
     // Productos
     message += "📋 PRODUCTOS:\n"
     cartItems.forEach((item, index) => {
-      message += `${index + 1}. ${item.name}\n`
-      message += `   • Presentación: ${item.pack}\n`
-      message += `   • Cantidad: ${item.quantity}\n`
-      message += `   • Precio unitario: Bs${item.price.toFixed(2)}\n`
-      message += `   • Subtotal: Bs${(item.price * item.quantity).toFixed(2)}\n\n`
+      message += `${index + 1}. ${item.nomProd}\n`
+      message += `   • Presentación: ${item.tamano}\n`
+      message += `   • Cantidad: ${item.cantidad}\n`
+      message += `   • Precio unitario: Bs${item.precioProd.toFixed(2)}\n`
+      message += `   • Subtotal: Bs${(item.precioProd * item.cantidad).toFixed(2)}\n\n`
     })
 
     // Total

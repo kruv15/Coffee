@@ -33,7 +33,7 @@ export default function AdminScreen() {
   // Cargar productos desde la API
   const loadProducts = async (showLoading = true) => {
     if (showLoading) setLoading(true)
-    
+
     try {
       const response = await fetch(`${ENV.API_BASE_URL}/productos`, {
         method: "GET",
@@ -61,13 +61,14 @@ export default function AdminScreen() {
         if (Array.isArray(productsArray) && productsArray.length > 0) {
           const formattedProducts: Product[] = productsArray.map((product: any, index: number) => {
             const formattedProduct = {
-              id: product._id || product.id || `temp_${Date.now()}_${index}`,
-              name: product.nomProd || product.nombre || product.name || "Producto sin nombre",
-              price: Number(product.precioProd || product.precio || product.price || 0),
-              image: product.imagen || product.image || "https://via.placeholder.com/300x200?text=Sin+Imagen",
-              description: product.descripcionProd || product.descripcion || product.description || "",
+              _id: product._id || product.id || `temp_${Date.now()}_${index}`,
+              nomProd: product.nomProd || product.nombre || product.name || "Producto sin nombre",
+              precioProd: Number(product.precioProd || product.precio || product.price || 0),
+              imagen: product.imagen || product.image || "https://via.placeholder.com/300x200?text=Sin+Imagen",
+              descripcionProd: product.descripcionProd || product.descripcion || product.description || "",
               stock: Number(product.stock || 0),
-              category: product.categoria || product.category || "cafe",
+              categoria: product.categoria || product.category || "cafe",
+              tamanos: product.tamanos || [],
             }
             return formattedProduct
           })
@@ -149,8 +150,8 @@ export default function AdminScreen() {
   const handleAddProduct = (productData: Omit<Product, "id">) => {
     const newProduct: Product = {
       ...productData,
-      category: productData.category || "cafe",
-      id: Date.now().toString(),
+      categoria: productData.categoria || "cafe",
+      _id: Date.now().toString(),
     }
     setProducts((prev) => [...prev, newProduct])
     setAddModalVisible(false)
@@ -160,9 +161,9 @@ export default function AdminScreen() {
   const handleUpdateProduct = (updatedProduct: Product) => {
     const product = {
       ...updatedProduct,
-      category: updatedProduct.category || "cafe",
+      category: updatedProduct.categoria || "cafe",
     }
-    setProducts((prev) => prev.map((p) => (p.id === product.id ? product : p)))
+    setProducts((prev) => prev.map((p) => (p._id === product._id ? product : p)))
     setEditingProduct(null)
     setAddModalVisible(false)
     Alert.alert("Éxito", "Producto actualizado localmente")
@@ -179,13 +180,12 @@ export default function AdminScreen() {
   }
 
   const handleOpenAdminChat = () => {
-    setDropdownVisible(false);
-    router.push('/admin-chat');
-  };
+    setDropdownVisible(false)
+    router.push("/admin-chat")
+  }
 
   // Debug para verificar el estado de productos
-  useEffect(() => {
-  }, [products])
+  useEffect(() => {}, [products])
 
   return (
     <View style={styles.container}>
@@ -195,10 +195,7 @@ export default function AdminScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Panel de Administración</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={styles.reportsButton} 
-            onPress={() => setDropdownVisible(true)}
-          >
+          <TouchableOpacity style={styles.reportsButton} onPress={() => setDropdownVisible(true)}>
             <Ionicons name="bar-chart" size={24} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.addButton} onPress={handleAddNewProduct}>
@@ -262,27 +259,29 @@ export default function AdminScreen() {
             </View>
           ) : (
             products.map((product, index) => (
-              <View key={`${product.id}_${index}`} style={styles.productItem}>
+              <View key={`${product._id}_${index}`} style={styles.productItem}>
                 <Image
-                  source={{ uri: product.image }}
+                  source={{ uri: product.imagen }}
                   style={styles.productImage}
                   onError={(e) => {
-                    console.log("Image load error for product:", product.name, e.nativeEvent.error)
+                    console.log("Image load error for product:", product.nomProd, e.nativeEvent.error)
                   }}
                   onLoad={() => {
-                    console.log("Image loaded for product:", product.name)
+                    console.log("Image loaded for product:", product.nomProd)
                   }}
                 />
                 <View style={styles.productInfo}>
                   <Text style={styles.productName} numberOfLines={2}>
-                    {product.name}
+                    {product.nomProd}
                   </Text>
-                  <Text style={styles.productPrice}>Bs{product.price.toFixed(2)}</Text>
+                  <Text style={styles.productPrice}>Bs{product.precioProd.toFixed(2)}</Text>
                   <Text style={styles.productStock}>Stock: {product.stock}</Text>
-                  <Text style={styles.productCategory}>{product.category}</Text>
-                  {product.description ? (
+                  <Text style={styles.productCategory}>
+                    {typeof product.categoria === "string" ? product.categoria : product.categoria.nombre}
+                  </Text>
+                  {product.descripcionProd ? (
                     <Text style={styles.productDescription} numberOfLines={1}>
-                      {product.description}
+                      {product.descripcionProd}
                     </Text>
                   ) : null}
                 </View>
@@ -292,7 +291,7 @@ export default function AdminScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.deleteButton}
-                    onPress={() => handleDeleteProduct(product.id, product.name)}
+                    onPress={() => handleDeleteProduct(product._id, product.nomProd)}
                   >
                     <Ionicons name="trash" size={20} color="#fff" />
                   </TouchableOpacity>

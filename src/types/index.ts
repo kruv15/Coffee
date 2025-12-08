@@ -1,48 +1,81 @@
-export type Category =
-  | "cafe-grano"
-  | "cafe-molido"
-  | "capsulas"
-  | "instantaneo"
-  | string
+export type Category = {
+  _id: string
+  nombre: string
+  descripcion?: string
+  imagen?: string
+}
+
+export interface Size {
+  nombre: string
+  precio: number
+}
 
 export interface Product {
-  id: string
-  name: string
-  price: number
-  image: string
-  description?: string
-  stock?: number
-  category?: Category
-}
-
-export interface CartItem extends Product {
-  id: string
-  name: string
-  image: string
-  price: number
-  pack: string
-  quantity: number
+  _id: string
+  nomProd: string
+  descripcionProd: string
+  precioProd: number
+  imagen: string
+  categoria: string | Category
   stock: number
+  tamanos?: Size[]
+  createdAt?: string
+  updatedAt?: string
 }
 
-export interface Pack {
-  label: string
-  price: string
+export interface CartItem {
+  _id: string
+  nomProd: string
+  imagen: string
+  precioProd: number
+  tamano?: string
+  cantidad: number
+  stock: number
+  categoria?: string | Category
 }
 
 export interface User {
-  id: string
-  email: string
-  name: string
-  lastName?: string
-  phone?: string
-  role: "user" | "admin"
+  _id: string
+  nombreUsr: string
+  apellidoUsr: string
+  emailUsr: string
+  celUsr?: string
+  rol: "user" | "admin"
 }
 
 export interface AuthState {
   isAuthenticated: boolean
   user: User | null
   token: string | null
+}
+
+export interface PedidoProducto {
+  productoId: {
+    _id: string
+    nomProd: string
+    imagen: string
+    precioProd: number
+  }
+  cantidad: number
+  precio: number
+  tamano?: string
+}
+
+export interface Pedido {
+  _id: string
+  userId: User
+  productos: PedidoProducto[]
+  total: number
+  status: "pendiente" | "confirmado" | "preparando" | "listo" | "entregado" | "cancelado"
+  direccionEntrega: string
+  infoAdicional?: string
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface Pack {
+  label: string
+  price: string
 }
 
 export * from "./chat"

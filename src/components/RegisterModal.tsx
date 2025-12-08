@@ -115,12 +115,12 @@ export function RegisterModal({ visible, onClose, onNavigateToLogin }: RegisterM
       if (response.ok) {
         // Manejar diferentes formatos de respuesta exitosa
         const userData = {
-          id: data.usuario?._id || data.data?.usuario?._id || data.usuario?.id || Date.now().toString(),
-          name: data.usuario?.nombreUsr || name.trim(),
-          lastName: data.usuario?.apellidoUsr || lastName.trim(),
-          email: data.usuario?.emailUsr || email.toLowerCase().trim(),
-          phone: data.usuario?.celUsr || phone.trim(),
-          role: 'user' as const,
+          _id: data.usuario?._id || data.data?.usuario?._id || data.usuario?.id || Date.now().toString(),
+          nombreUsr: data.usuario?.nombreUsr || name.trim(),
+          apellidoUsr: data.usuario?.apellidoUsr || lastName.trim(),
+          emailUsr: data.usuario?.emailUsr || email.toLowerCase().trim(),
+          celUsr: data.usuario?.celUsr || phone.trim(),
+          rol: 'user' as const,
         };
 
         const token = data.token || data.data?.token || 'registration-token-' + Date.now();

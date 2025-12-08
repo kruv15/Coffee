@@ -73,12 +73,12 @@ export const useRegister = () => {
       if (response.success) {
         // Crear usuario y hacer login automático
         const userData: User = {
-          id: response.usuario?._id || response.data?.usuario?._id || response.usuario?.id || Date.now().toString(),
-          name: response.usuario?.nombreUsr || data.name.trim(),
-          lastName: response.usuario?.apellidoUsr || data.lastName.trim(),
-          email: response.usuario?.emailUsr || data.email.toLowerCase().trim(),
-          phone: response.usuario?.celUsr || data.phone.trim(),
-          role: 'user',
+          _id: response.usuario?._id || response.data?.usuario?._id || response.usuario?._id || Date.now().toString(),
+          nombreUsr: response.usuario?.nombreUsr || data.name.trim(),
+          apellidoUsr: response.usuario?.apellidoUsr || data.lastName.trim(),
+          emailUsr: response.usuario?.emailUsr || data.email.toLowerCase().trim(),
+          celUsr: response.usuario?.celUsr || data.phone.trim(),
+          rol: 'user',
         };
 
         const token = response.token || response.data?.token || 'registration-token-' + Date.now();

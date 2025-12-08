@@ -183,12 +183,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const user: User = {
-          id: apiUser?.id || apiUser?._id || "1",
-          email: apiUser?.emailUsr || email,
-          name: apiUser?.nombreUsr || email.split("@")[0],
-          lastName: apiUser?.apellidoUsr || "",
-          phone: apiUser?.celUsr || "",
-          role: userRole,
+          _id: apiUser?.id || apiUser?._id || "1",
+          emailUsr: apiUser?.emailUsr || email,
+          nombreUsr: apiUser?.nombreUsr || email.split("@")[0],
+          apellidoUsr: apiUser?.apellidoUsr || "",
+          celUsr: apiUser?.celUsr || "",
+          rol: userRole,
         }
 
         const token = data.token || data.data?.token || "login-token-" + Date.now()
@@ -213,12 +213,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Starting admin login...")
 
       const adminUser: User = {
-        id: "admin-001",
-        email: "admin@gmail.com",
-        name: "Administrator",
-        lastName: "System",
-        phone: "",
-        role: "admin",
+        _id: "admin-001",
+        emailUsr: "admin@gmail.com",
+        nombreUsr: "Administrator",
+        apellidoUsr: "System",
+        celUsr: "",
+        rol: "admin",
       }
 
       const adminToken = "admin-token-" + Date.now()

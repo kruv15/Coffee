@@ -43,9 +43,9 @@ export default function AdminChatScreen() {
 
   // Custom hooks
   const { conectado, cargando, error, registrarManejador, desregistrarManejador } = useChatConexion({
-    usuarioId: state.user?.id || "",
+    usuarioId: state.user?._id || "",
     tipoUsuario: "admin",
-    enHabilitado: !!state.isAuthenticated && state.user?.role === "admin",
+    enHabilitado: !!state.isAuthenticated && state.user?.rol === "admin",
   })
 
   const { mensajes, agregarMensajeLocal, reemplazarMensajeLocal, establecerMensajes, limpiarMensajes } =
@@ -64,12 +64,12 @@ export default function AdminChatScreen() {
 
   // Verificar que sea admin
   useEffect(() => {
-    if (state.isAuthenticated && state.user?.role !== "admin") {
+    if (state.isAuthenticated && state.user?.rol !== "admin") {
       Alert.alert("Acceso Denegado", "Solo los administradores pueden acceder", [
         { text: "OK", onPress: () => router.back() },
       ])
     }
-  }, [state.isAuthenticated, state.user?.role])
+  }, [state.isAuthenticated, state.user?.rol])
 
   // Registrar manejadores de eventos
   useEffect(() => {
@@ -102,17 +102,17 @@ export default function AdminChatScreen() {
         setConversaciones((previas) => {
           // Evitar duplicados combinando por ID único (usuarioId + tipoChat + asuntoId)
           const mapConversaciones = new Map<string, Conversacion>()
-          
+
           previas.forEach((conv) => {
             const clave = `${conv.usuarioId}_${conv.tipoChat}_${conv.asuntoId || "null"}`
             mapConversaciones.set(clave, conv)
           })
-          
+
           evento.conversaciones.forEach((conv: Conversacion) => {
             const clave = `${conv.usuarioId}_${conv.tipoChat}_${conv.asuntoId || "null"}`
             mapConversaciones.set(clave, conv)
           })
-          
+
           return Array.from(mapConversaciones.values())
         })
       } else {
@@ -340,7 +340,7 @@ export default function AdminChatScreen() {
     ])
   }
 
-  if (!state.isAuthenticated || state.user?.role !== "admin") {
+  if (!state.isAuthenticated || state.user?.rol !== "admin") {
     return (
       <View style={styles.container}>
         <View style={styles.notAuthContainer}>
@@ -355,9 +355,7 @@ export default function AdminChatScreen() {
     <>
       <StatusBar backgroundColor={Colors.light.primary} style="light" />
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          {!conversacionActual ? renderListaConversaciones() : renderChat()}
-        </View>
+        <View style={styles.container}>{!conversacionActual ? renderListaConversaciones() : renderChat()}</View>
       </SafeAreaView>
     </>
   )
@@ -441,9 +439,7 @@ export default function AdminChatScreen() {
   }
 
   function renderConversacion(item: Conversacion) {
-    const esActiva =
-      conversacionActual?.usuarioId === item.usuarioId &&
-      conversacionActual?.tipoChat === item.tipoChat
+    const esActiva = conversacionActual?.usuarioId === item.usuarioId && conversacionActual?.tipoChat === item.tipoChat
 
     return (
       <TouchableOpacity
@@ -634,7 +630,7 @@ const styles = StyleSheet.create({
   },
   listaHeader: {
     flexDirection: "row",
-    alignItems: "center",        // 🔹 Centra verticalmente
+    alignItems: "center", // 🔹 Centra verticalmente
     justifyContent: "space-between",
     padding: 16,
     backgroundColor: "#fff",
@@ -917,5 +913,5 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#fff",
-  }
+  },
 })

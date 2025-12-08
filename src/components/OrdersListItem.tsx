@@ -1,5 +1,4 @@
-import React from "react"
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import React, { StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import type { Order } from "../services/orderService"
 import { Colors } from "../constants/Colors"
@@ -11,12 +10,7 @@ interface OrdersListItemProps {
   statusBgColor: string
 }
 
-export function OrdersListItem({
-  order,
-  onPress,
-  statusColor,
-  statusBgColor,
-}: OrdersListItemProps) {
+export function OrdersListItem({ order, onPress, statusColor, statusBgColor }: OrdersListItemProps) {
   const formattedDate = new Date(order.createdAt).toLocaleDateString("es-ES", {
     year: "numeric",
     month: "short",
@@ -29,9 +23,7 @@ export function OrdersListItem({
         <View style={styles.titleRow}>
           <Text style={styles.orderId}>Pedido #{order._id?.substring(0, 8)}...</Text>
           <View style={[styles.statusBadge, { backgroundColor: statusBgColor }]}>
-            <Text style={[styles.statusText, { color: statusColor }]}>
-              {order.status?.toUpperCase()}
-            </Text>
+            <Text style={[styles.statusText, { color: statusColor }]}>{order.status?.toUpperCase()}</Text>
           </View>
         </View>
 
