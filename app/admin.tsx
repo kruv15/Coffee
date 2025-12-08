@@ -60,10 +60,15 @@ export default function AdminScreen() {
 
         if (Array.isArray(productsArray) && productsArray.length > 0) {
           const formattedProducts: Product[] = productsArray.map((product: any, index: number) => {
+            const precioProd =
+              product.tamanos && product.tamanos.length > 0
+                ? Number(product.tamanos[0].precio)
+                : Number(product.precioProd || product.precio || product.price || 0)
+
             const formattedProduct = {
               _id: product._id || product.id || `temp_${Date.now()}_${index}`,
               nomProd: product.nomProd || product.nombre || product.name || "Producto sin nombre",
-              precioProd: Number(product.precioProd || product.precio || product.price || 0),
+              precioProd: precioProd,
               imagen: product.imagen || product.image || "https://via.placeholder.com/300x200?text=Sin+Imagen",
               descripcionProd: product.descripcionProd || product.descripcion || product.description || "",
               stock: Number(product.stock || 0),
@@ -274,7 +279,9 @@ export default function AdminScreen() {
                   <Text style={styles.productName} numberOfLines={2}>
                     {product.nomProd}
                   </Text>
-                  <Text style={styles.productPrice}>Bs{product.precioProd.toFixed(2)}</Text>
+                  <Text style={styles.productPrice}>
+                    Bs{(product.precioProd ?? (product.tamanos?.[0]?.precio || 0)).toFixed(2)}
+                  </Text>
                   <Text style={styles.productStock}>Stock: {product.stock}</Text>
                   <Text style={styles.productCategory}>
                     {typeof product.categoria === "string" ? product.categoria : product.categoria.nombre}

@@ -13,20 +13,17 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import * as ImagePicker from "expo-image-picker"
+import { cloudinaryService } from "../services/cloudinaryService"
 import type { Product, Category } from "../types"
 import { productService, type CreateProductData } from "../services/api"
 import { categoriaService } from "../services/categoriaService"
 import { AddCategoryModal } from "./AddCategoryModal"
 import { useAuth } from "../context/AuthContext"
-import {
-  validateProductName,
-  validatePrice,
-  validateStock,
-  validateImageUrl,
-  validateRequired,
-} from "../utils/validation"
+import { validateProductName, validateStock, validateImageUrl, validateRequired } from "../utils/validation"
 
 interface AddProductModalProps {
   visible: boolean
@@ -52,13 +49,14 @@ export function AddProductModal({
 }: AddProductModalProps) {
   const { state } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [cargandoCategorias, setCargandoCategorias] = useState(false)
   const [mostrarModalCategoria, setMostrarModalCategoria] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string>("")
   const [categorias, setCategorias] = useState<Category[]>([])
   const [formData, setFormData] = useState({
     nomProd: "",
     descripcionProd: "",
-    precioProd: "",
     stock: "",
     categoria: "" as string,
     imagen: "",
@@ -105,7 +103,6 @@ export function AddProductModal({
       setFormData({
         nomProd: editingProduct.nomProd,
         descripcionProd: editingProduct.descripcionProd || "",
-        precioProd: editingProduct.precioProd.toString(),
         stock: editingProduct.stock?.toString() || "10",
         categoria:
           typeof editingProduct.categoria === "string" ? editingProduct.categoria : editingProduct.categoria._id,
@@ -128,7 +125,6 @@ export function AddProductModal({
     setFormData({
       nomProd: "",
       descripcionProd: "",
-      precioProd: "",
       stock: "",
       categoria: "",
       imagen: "",
@@ -136,28 +132,26 @@ export function AddProductModal({
     setTamanos([])
     setNuevoTamano({ nombre: "", precio: "" })
     setErrors({})
+    setImagePreview("")
   }
 
   const agregarTamano = () => {
     if (!nuevoTamano.nombre.trim()) {
-      Alert.alert("Error", "Ingresa el nombre del tamaño");
-      return;
+      Alert.alert("Error", "Ingresa el nombre del tamaño")
+      return
     }
 
     if (!nuevoTamano.precio || Number(nuevoTamano.precio) <= 0) {
-      Alert.alert("Error", "Ingresa un precio válido para el tamaño");
-      return;
+      Alert.alert("Error", "Ingresa un precio válido para el tamaño")
+      return
     }
 
-    const nombreCompleto = nuevoTamano.nombre + unidadTamano;
+    const nombreCompleto = nuevoTamano.nombre + unidadTamano
 
-    setTamanos([
-      ...tamanos,
-      { nombre: nombreCompleto, precio: nuevoTamano.precio }
-    ]);
+    setTamanos([...tamanos, { nombre: nombreCompleto, precio: nuevoTamano.precio }])
 
-    setNuevoTamano({ nombre: "", precio: "" });
-  };
+    setNuevoTamano({ nombre: "", precio: "" })
+  }
 
   const eliminarTamano = (index: number) => {
     setTamanos(tamanos.filter((_, i) => i !== index))
@@ -178,11 +172,6 @@ export function AddProductModal({
       newErrors.descripcionProd = "La descripción debe tener al menos 10 caracteres"
     } else if (formData.descripcionProd.trim().length > 500) {
       newErrors.descripcionProd = "La descripción no puede exceder 500 caracteres"
-    }
-
-    const priceValidation = validatePrice(formData.precioProd)
-    if (!priceValidation.isValid) {
-      newErrors.precioProd = priceValidation.errors[0]
     }
 
     const stockValidation = validateStock(formData.stock)
@@ -208,6 +197,20 @@ export function AddProductModal({
   }
 
   const handleSubmit = async () => {
+    /** SUBIR IMAGEN A CLOUDINARY SI HAY UNA NUEVA */
+    if (imagePreview && formData.imagen === "") {
+      setUploadingImage(true)
+      const urlCloudinary = await cloudinaryService.subirImagen(imagePreview, `producto_${Date.now()}.jpg`)
+      setUploadingImage(false)
+
+      if (!urlCloudinary) {
+        Alert.alert("Error", "No se pudo subir la imagen a Cloudinary")
+        return
+      }
+
+      updateField("imagen", urlCloudinary)
+    }
+
     if (!validateForm()) {
       Alert.alert("Error de validación", "Por favor, corrige los errores antes de continuar.")
       return
@@ -226,7 +229,6 @@ export function AddProductModal({
         const productData: CreateProductData = {
           nomProd: formData.nomProd.trim(),
           descripcionProd: formData.descripcionProd.trim(),
-          precioProd: Number.parseFloat(formData.precioProd),
           stock: Number.parseInt(formData.stock),
           categoria: formData.categoria,
           imagen: formData.imagen.trim(),
@@ -290,7 +292,6 @@ export function AddProductModal({
       const newProduct: Omit<Product, "_id"> = {
         nomProd: formData.nomProd.trim(),
         descripcionProd: formData.descripcionProd.trim(),
-        precioProd: Number(formData.precioProd),
         stock: Number(formData.stock),
         categoria: formData.categoria,
         imagen: formData.imagen.trim(),
@@ -307,7 +308,6 @@ export function AddProductModal({
       const updatedProduct: Product = {
         ...editingProduct,
         nomProd: formData.nomProd.trim(),
-        precioProd: Number(formData.precioProd),
         imagen: formData.imagen.trim(),
         descripcionProd: formData.descripcionProd.trim(),
         stock: Number(formData.stock),
@@ -322,6 +322,32 @@ export function AddProductModal({
     }
 
     Alert.alert("Error", "No se puede guardar el producto. Inicia sesión como administrador.")
+  }
+
+  const seleccionarImagen = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (status !== "granted") {
+        Alert.alert("Permiso requerido", "Se requiere permiso para acceder a la galería")
+        return
+      }
+
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+
+      if (!resultado.canceled) {
+        const imageUri = resultado.assets[0].uri
+        setImagePreview(imageUri)
+        updateField("imagen", "")
+      }
+    } catch (error) {
+      console.error("[AddProductModal] Error seleccionando imagen:", error)
+      Alert.alert("Error", "Ocurrió un error al seleccionar la imagen")
+    }
   }
 
   const updateField = (field: string, value: string) => {
@@ -374,18 +400,6 @@ export function AddProductModal({
                       numberOfLines={3}
                     />
                     {errors.descripcionProd && <Text style={styles.errorText}>{errors.descripcionProd}</Text>}
-                  </View>
-
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Precio Base</Text>
-                    <TextInput
-                      style={[styles.input, errors.precioProd && styles.inputError]}
-                      placeholder="Ej: 25000"
-                      value={formData.precioProd}
-                      onChangeText={(value) => updateField("precioProd", value)}
-                      keyboardType="numeric"
-                    />
-                    {errors.precioProd && <Text style={styles.errorText}>{errors.precioProd}</Text>}
                   </View>
 
                   <View style={styles.inputContainer}>
@@ -498,65 +512,119 @@ export function AddProductModal({
                           <Text style={{ color: unidadTamano === "kg" ? "#fff" : "#333" }}>kg</Text>
                         </TouchableOpacity>
                       </View>
-                      <TextInput
-                        style={styles.tamanoInput}
-                        placeholder="Ej: 250"
-                        keyboardType="numeric"
-                        value={nuevoTamano.nombre}
-                        onChangeText={(value) => {
-                          let soloNumeros = value.replace(/[^0-9]/g, "");
 
-                          if (!soloNumeros) {
-                            setNuevoTamano({ ...nuevoTamano, nombre: "" });
-                            return;
-                          }
+                      <View style={styles.addTamanoContainer}>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Ej: 250"
+                          value={nuevoTamano.nombre}
+                          onChangeText={(value) => {
+                            let soloNumeros = value.replace(/[^0-9]/g, "")
 
-                          let num = Number(soloNumeros);
+                            if (!soloNumeros) {
+                              setNuevoTamano({ ...nuevoTamano, nombre: "" })
+                              return
+                            }
 
-                          // Conversión automática de unidades
-                          if (unidadTamano === "gr" && num >= 1000) {
-                            // convertir gr → kg
-                            const kg = num / 1000;
-                            setUnidadTamano("kg"); // cambia visualmente el botón
-                            soloNumeros = kg.toString();
-                          }
+                            const num = Number(soloNumeros)
 
-                          if (unidadTamano === "kg" && num < 1) {
-                            // convertir kg → gr
-                            const gramos = num * 1000;
-                            setUnidadTamano("gr");
-                            soloNumeros = gramos.toString();
-                          }
+                            // Conversión automática de unidades
+                            if (unidadTamano === "gr" && num >= 1000) {
+                              // convertir gr → kg
+                              const kg = num / 1000
+                              setUnidadTamano("kg") // cambia visualmente el botón
+                              soloNumeros = kg.toString()
+                            }
 
-                          setNuevoTamano({ ...nuevoTamano, nombre: soloNumeros });
-                        }}
-                      />
-                      <TextInput
-                        style={styles.tamanoInput}
-                        placeholder="Precio"
-                        value={nuevoTamano.precio}
-                        onChangeText={(value) => {
-                          const soloNumeros = value.replace(/[^0-9.]/g, "")
-                          setNuevoTamano({ ...nuevoTamano, precio: soloNumeros })
-                        }}
-                        keyboardType="numeric"
-                      />
-                      <TouchableOpacity style={styles.addTamanoButton} onPress={agregarTamano}>
-                        <Ionicons name="add" size={20} color="#fff" />
-                        <Text style={styles.addTamanoButtonText}>Agregar Tamaño</Text>
-                      </TouchableOpacity>
+                            if (unidadTamano === "kg" && num < 1) {
+                              // convertir kg → gr
+                              const gramos = num * 1000
+                              setUnidadTamano("gr")
+                              soloNumeros = gramos.toString()
+                            }
+
+                            setNuevoTamano({ ...nuevoTamano, nombre: soloNumeros })
+                          }}
+                          keyboardType="numeric"
+                        />
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Ej: 25000"
+                          value={nuevoTamano.precio}
+                          onChangeText={(value) => {
+                            const soloNumeros = value.replace(/[^0-9.]/g, "")
+                            setNuevoTamano({ ...nuevoTamano, precio: soloNumeros })
+                          }}
+                          keyboardType="numeric"
+                        />
+                        <TouchableOpacity style={styles.agregarTamanoButton} onPress={agregarTamano}>
+                          <Ionicons name="add" size={20} color="#fff" />
+                          <Text style={styles.agregarTamanoButtonText}>Agregar</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
 
                   <View style={styles.inputContainer}>
-                    <Text style={styles.label}>URL de la imagen</Text>
-                    <TextInput
-                      style={[styles.input, errors.imagen && styles.inputError]}
-                      placeholder="https://example.com/imagen.jpg"
-                      value={formData.imagen}
-                      onChangeText={(value) => updateField("imagen", value)}
-                      autoCapitalize="none"
-                    />
+                    <Text style={styles.label}>Imagen del Producto</Text>
+
+                    {(imagePreview || formData.imagen) && (
+                      <View style={styles.imagePreviewContainer}>
+                        <Image
+                          source={{ uri: imagePreview || formData.imagen }}
+                          style={styles.imagePreview}
+                          onError={() => console.log("[v0] Error cargando preview de imagen")}
+                        />
+                        {!imagePreview && formData.imagen && (
+                          <Text style={styles.imagePreviewText}>Imagen actual de Cloudinary</Text>
+                        )}
+                      </View>
+                    )}
+
+                    {/* BOTÓN ELIMINAR IMAGEN */}
+                    {imagePreview !== "" && (
+                      <TouchableOpacity
+                        style={styles.deleteImageButton}
+                        onPress={() => {
+                          setImagePreview("")
+                          updateField("imagen", "")
+                        }}
+                      >
+                        <Ionicons name="trash" size={20} color="#fff" />
+                        <Text style={{ color: "#fff", marginLeft: 8 }}>Eliminar Imagen</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* BOTÓN SUBIR IMAGEN */}
+                    {!imagePreview && !formData.imagen && (
+                      <TouchableOpacity
+                        style={[styles.selectImageButton, uploadingImage && styles.disabledButton]}
+                        onPress={seleccionarImagen}
+                        disabled={uploadingImage}
+                      >
+                        {uploadingImage ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <>
+                            <Ionicons name="cloud-upload" size={20} color="#fff" />
+                            <Text style={styles.selectImageButtonText}>Subir Imagen a Cloudinary</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )}
+
+                    {!imagePreview && !formData.imagen && <Text style={styles.orText}>O pega una URL:</Text>}
+
+                    {!imagePreview && !formData.imagen && (
+                      <TextInput
+                        style={[styles.input, errors.imagen && styles.inputError]}
+                        placeholder="https://example.com/imagen.jpg"
+                        value={formData.imagen}
+                        onChangeText={(value) => updateField("imagen", value)}
+                        autoCapitalize="none"
+                        editable={!uploadingImage}
+                      />
+                    )}
                     {errors.imagen && <Text style={styles.errorText}>{errors.imagen}</Text>}
                   </View>
 
@@ -739,6 +807,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
   },
+  addTamanoContainer: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+  },
   tamanoInput: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -748,6 +823,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     backgroundColor: "#fff",
     marginBottom: 10,
+  },
+  agregarTamanoButton: {
+    backgroundColor: "#795548",
+    borderRadius: 8,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    minWidth: 100,
+    paddingHorizontal: 10,
+  },
+  agregarTamanoButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   addTamanoButton: {
     backgroundColor: "#795548",
@@ -777,5 +868,62 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  selectImageButton: {
+    backgroundColor: "#795548",
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  selectImageButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  imagePreviewContainer: {
+    width: "100%",
+    height: 180,
+    borderRadius: 8,
+    overflow: "hidden",
+    marginBottom: 12,
+    backgroundColor: "#f5f5f5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imagePreview: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  imagePreviewText: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    color: "#fff",
+    fontSize: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  orText: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 8,
+    marginBottom: 8,
+    fontStyle: "italic",
+  },
+  deleteImageButton: {
+    backgroundColor: "#e74c3c",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 10,
   },
 })

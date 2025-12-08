@@ -126,10 +126,15 @@ export default function HomeScreen() {
           const formattedProducts: Product[] = productsArray.map((product: any, index: number) => {
             console.log(`Processing product ${index + 1}:`, product)
 
+            const precioProd =
+              product.tamanos && product.tamanos.length > 0
+                ? Number(product.tamanos[0].precio)
+                : Number(product.precioProd || product.precio || product.price || 0)
+
             const formattedProduct = {
               _id: product._id || product.id || `product_${Date.now()}_${index}`,
               nomProd: product.nomProd || product.nombre || product.name || "Producto sin nombre",
-              precioProd: Number(product.precioProd || product.precio || product.price || 0),
+              precioProd: precioProd,
               imagen: product.imagen || product.image || "https://via.placeholder.com/300x200?text=Sin+Imagen",
               descripcionProd: product.descripcionProd || product.descripcion || product.description || "",
               stock: Number(product.stock || 0),
@@ -206,16 +211,12 @@ export default function HomeScreen() {
   }
 
   const handleUpdateQuantity = (item: CartItem, newQty: number) => {
-  setCart((prev: CartItem[]) =>
-    prev
-      .map((p: CartItem) =>
-        p._id === item._id && p.tamano === item.tamano
-          ? { ...p, cantidad: newQty }
-          : p
-      )
-      .filter((p) => p.cantidad > 0)
-  );
-};
+    setCart((prev: CartItem[]) =>
+      prev
+        .map((p: CartItem) => (p._id === item._id && p.tamano === item.tamano ? { ...p, cantidad: newQty } : p))
+        .filter((p) => p.cantidad > 0),
+    )
+  }
 
   const handleNavigateToRegister = () => {
     setLoginVisible(false)

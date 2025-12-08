@@ -5,11 +5,10 @@ const API_BASE_URL = ENV.API_BASE_URL
 export interface CreateProductData {
   nomProd: string
   descripcionProd: string
-  precioProd: number
   stock: number
   categoria: string
   imagen: string
-  tamanos?: Array<{
+  tamanos: Array<{
     nombre: string
     precio: number
   }>

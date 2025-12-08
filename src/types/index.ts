@@ -14,13 +14,13 @@ export interface Product {
   _id: string
   nomProd: string
   descripcionProd: string
-  precioProd: number
   imagen: string
   categoria: string | Category
   stock: number
   tamanos?: Size[]
   createdAt?: string
   updatedAt?: string
+  precioProd?: number
 }
 
 export interface CartItem {

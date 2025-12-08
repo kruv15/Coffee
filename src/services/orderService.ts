@@ -32,7 +32,6 @@ export interface Order {
       _id: string
       nomProd: string
       imagen: string
-      precioProd: number
     }
     cantidad: number
     precio: number
