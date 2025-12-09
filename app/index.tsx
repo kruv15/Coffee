@@ -308,7 +308,9 @@ export default function HomeScreen() {
         }}
       />
       <View style={styles.info}>
-        <Text style={styles.name}>{item.nomProd}</Text>
+        <Text style={styles.name}>
+          {item.nomProd}{item.tamanos && item.tamanos.length > 0 ? ` (${item.tamanos[0].nombre})` : ""}
+        </Text>
         <Text style={styles.price}>Bs{item.precioProd}</Text>
         {item.stock !== undefined && item.stock >= 0 && (
           <Text style={[styles.stock, item.stock === 0 && styles.outOfStock]}>

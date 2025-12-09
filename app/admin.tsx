@@ -276,8 +276,8 @@ export default function AdminScreen() {
                   }}
                 />
                 <View style={styles.productInfo}>
-                  <Text style={styles.productName} numberOfLines={2}>
-                    {product.nomProd}
+                  <Text style={styles.productName}>
+                    {product.nomProd}{product.tamanos && product.tamanos.length > 0 ? ` (${product.tamanos[0].nombre})` : ""}
                   </Text>
                   <Text style={styles.productPrice}>
                     Bs{(product.precioProd ?? (product.tamanos?.[0]?.precio || 0)).toFixed(2)}

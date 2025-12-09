@@ -473,9 +473,11 @@ export function AddProductModal({
                       style={[styles.input, errors.nomProd && styles.inputError]}
                       placeholder="Ej: Café Colombiano Premium"
                       value={formData.nomProd}
-                      onChangeText={(value) => updateField("nomProd", value)}
+                      onChangeText={(value) => {
+                        const limpio = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ()\-_,.]/g, "")
+                        updateField("nomProd", limpio)
+                      }}
                     />
-                    {errors.nomProd && <Text style={styles.errorText}>{errors.nomProd}</Text>}
                   </View>
 
                   <View style={styles.inputContainer}>
@@ -484,7 +486,10 @@ export function AddProductModal({
                       style={[styles.input, styles.textArea, errors.descripcionProd && styles.inputError]}
                       placeholder="Ej: Tostado medio con notas de chocolate..."
                       value={formData.descripcionProd}
-                      onChangeText={(value) => updateField("descripcionProd", value)}
+                      onChangeText={(value) => {
+                        const limpio = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ()\-_,.]/g, "")
+                        updateField("descripcionProd", limpio)
+                      }}
                       multiline
                       numberOfLines={3}
                     />
@@ -572,6 +577,7 @@ export function AddProductModal({
                     )}
 
                     {/* Área para agregar tamaño */}
+                    {tamanos.length === 0 && (
                     <View style={styles.addTamanoSection}>
                       <Text style={styles.subLabel}>Agregar Tamaño</Text>
 
@@ -622,9 +628,9 @@ export function AddProductModal({
                         } else {
                           // Para kg permitir decimales
                           limpio = value
-                            .replace(/,/g, ".")                // convertir coma a punto
-                            .replace(/[^0-9.]/g, "")           // solo números y punto
-                            .replace(/(\..*)\./g, "$1");       // evitar más de un punto
+                            .replace(/,/g, ".")
+                            .replace(/[^0-9.]/g, "")
+                            .replace(/(\..*)\./g, "$1")
                         }
 
                         setNuevoTamano({ ...nuevoTamano, nombre: limpio });
@@ -665,6 +671,7 @@ export function AddProductModal({
                         <Text style={styles.agregarTamanoButtonText}>Agregar Tamaño</Text>
                       </TouchableOpacity>
                     </View>
+                  )}
                   </View>
 
                   <View style={styles.inputContainer}>
