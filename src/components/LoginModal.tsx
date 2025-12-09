@@ -100,7 +100,7 @@ export function LoginModal({ visible, onClose, onNavigateToRegister }: LoginModa
                 <Ionicons name="close" size={28} color="#222" />
               </TouchableOpacity>
               <Text style={styles.title}>Iniciar Sesión.</Text>
-              <View style={{ width: 28 }} /> {/* Espacio para alinear el ícono */}
+              <View style={{ width: 28 }}/>
             </View>
 
             <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
@@ -144,7 +144,6 @@ export function LoginModal({ visible, onClose, onNavigateToRegister }: LoginModa
               <TouchableOpacity style={styles.registerLink} onPress={handleNavigateToRegister} disabled={loading}>
                 <Text style={styles.registerLinkText}>¿No tienes cuenta? Regístrate aquí</Text>
               </TouchableOpacity>
-
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
