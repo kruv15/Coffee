@@ -53,21 +53,21 @@ export default function OrdersScreen() {
 
     setLoading(true)
     try {
-      console.log("📋 Cargando pedidos del usuario...")
+      console.log("Cargando pedidos del usuario...")
       const response = await orderService.obtenerMisPedidos(state.token)
 
       if (response.success && response.data?.pedidos) {
-        console.log("✅ Pedidos cargados:", response.data.pedidos.length)
+        console.log("Pedidos cargados:", response.data.pedidos.length)
         setOrders(response.data.pedidos)
       } else {
-        console.log("⚠️ Sin pedidos encontrados:", response.message)
+        console.log("Sin pedidos encontrados:", response.message)
         setOrders([])
         if (response.message && response.message !== "Pedidos obtenidos exitosamente") {
           Alert.alert("Información", response.message)
         }
       }
     } catch (error) {
-      console.error("❌ Error cargando pedidos:", error)
+      console.error("Error cargando pedidos:", error)
       Alert.alert("Error", "No se pudieron cargar los pedidos")
     } finally {
       setLoading(false)

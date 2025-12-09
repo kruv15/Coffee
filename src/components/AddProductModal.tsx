@@ -32,6 +32,7 @@ interface AddProductModalProps {
   onAddProduct?: (product: Omit<Product, "_id">) => void
   onUpdateProduct?: (product: Product) => void
   editingProduct?: Product | null
+  onReloadProducts?: () => void
 }
 
 interface FormTamano {
@@ -46,6 +47,7 @@ export function AddProductModal({
   onAddProduct,
   onUpdateProduct,
   editingProduct,
+  onReloadProducts,
 }: AddProductModalProps) {
   const { state } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -115,7 +117,11 @@ export function AddProductModal({
             precio: t.precio.toString(),
           })),
         )
+      } else {
+        setTamanos([])
       }
+      setNuevoTamano({ nombre: "", precio: "" })
+      setUnidadTamano("gr")
     } else {
       resetForm()
     }
@@ -135,23 +141,58 @@ export function AddProductModal({
     setImagePreview("")
   }
 
+  function convertirGrAKg(valorGr: number): number {
+    if (valorGr >= 1000) {
+      return valorGr / 1000
+    }
+    return valorGr
+  }
+
+  function convertirKgAGr(valorKg: number): number {
+    if (valorKg < 1) {
+      return valorKg * 1000
+    }
+    return valorKg
+  }
+
   const agregarTamano = () => {
     if (!nuevoTamano.nombre.trim()) {
-      Alert.alert("Error", "Ingresa el nombre del tamaño")
-      return
+      Alert.alert("Error", "Ingresa el nombre del tamaño");
+      return;
     }
 
     if (!nuevoTamano.precio || Number(nuevoTamano.precio) <= 0) {
-      Alert.alert("Error", "Ingresa un precio válido para el tamaño")
-      return
+      Alert.alert("Error", "Ingresa un precio válido para el tamaño");
+      return;
     }
 
-    const nombreCompleto = nuevoTamano.nombre + unidadTamano
+    let cantidad = Number(nuevoTamano.nombre);
+    let nombreFinal = "";
 
-    setTamanos([...tamanos, { nombre: nombreCompleto, precio: nuevoTamano.precio }])
+    if (unidadTamano === "gr") {
+      // si supera 1000gr → convertir a kg
+      if (cantidad >= 1000) {
+        const kg = convertirGrAKg(cantidad);
+        nombreFinal = `${kg}kg`;
+      } else {
+        nombreFinal = `${cantidad}gr`;
+      }
+    }
 
-    setNuevoTamano({ nombre: "", precio: "" })
-  }
+    if (unidadTamano === "kg") {
+      // si es menor a 1kg → convertir a gr
+      if (cantidad < 1) {
+        const gr = convertirKgAGr(cantidad);
+        nombreFinal = `${gr}gr`;
+      } else {
+        nombreFinal = `${cantidad}kg`;
+      }
+    }
+
+    setTamanos([...tamanos, { nombre: nombreFinal, precio: nuevoTamano.precio }]);
+
+    setNuevoTamano({ nombre: "", precio: "" });
+  };
 
   const eliminarTamano = (index: number) => {
     setTamanos(tamanos.filter((_, i) => i !== index))
@@ -168,8 +209,8 @@ export function AddProductModal({
     const descValidation = validateRequired(formData.descripcionProd, "Descripción")
     if (!descValidation.isValid) {
       newErrors.descripcionProd = descValidation.errors[0]
-    } else if (formData.descripcionProd.trim().length < 10) {
-      newErrors.descripcionProd = "La descripción debe tener al menos 10 caracteres"
+    } else if (formData.descripcionProd.trim().length < 5) {
+      newErrors.descripcionProd = "La descripción debe tener al menos 5 caracteres"
     } else if (formData.descripcionProd.trim().length > 500) {
       newErrors.descripcionProd = "La descripción no puede exceder 500 caracteres"
     }
@@ -179,9 +220,15 @@ export function AddProductModal({
       newErrors.stock = stockValidation.errors[0]
     }
 
-    const imageValidation = validateImageUrl(formData.imagen)
-    if (!imageValidation.isValid) {
-      newErrors.imagen = imageValidation.errors[0]
+    // Validación de imagen
+    if (!imagePreview) {
+      // Caso URL → debe verificarse
+      if (!formData.imagen.trim()) {
+        newErrors.imagen = "Debes ingresar una URL o seleccionar una imagen."
+      } else {
+        const imageValidation = validateImageUrl(formData.imagen.trim())
+        if (!imageValidation.isValid) newErrors.imagen = imageValidation.errors[0]
+      }
     }
 
     if (!formData.categoria) {
@@ -197,89 +244,127 @@ export function AddProductModal({
   }
 
   const handleSubmit = async () => {
-    /** SUBIR IMAGEN A CLOUDINARY SI HAY UNA NUEVA */
-    if (imagePreview && formData.imagen === "") {
-      setUploadingImage(true)
-      const urlCloudinary = await cloudinaryService.subirImagen(imagePreview, `producto_${Date.now()}.jpg`)
-      setUploadingImage(false)
+    try {
+      // and pass the correct image URL to the backend
+      let imagenFinal = formData.imagen.trim()
 
-      if (!urlCloudinary) {
-        Alert.alert("Error", "No se pudo subir la imagen a Cloudinary")
+      // Subir imagen si viene de la galería
+      if (imagePreview && !imagenFinal) {
+        setUploadingImage(true)
+
+        const url = await cloudinaryService.subirImagen(imagePreview, `producto_${Date.now()}.jpg`)
+
+        setUploadingImage(false)
+
+        if (!url) {
+          Alert.alert("Error", "No se pudo subir la imagen a Cloudinary.")
+          return
+        }
+
+        imagenFinal = url
+      }
+
+      // Validar que tenemos una imagen válida
+      if (!imagenFinal) {
+        Alert.alert("Error", "Debes proporcionar una imagen (galería o URL)")
         return
       }
 
-      updateField("imagen", urlCloudinary)
-    }
+      // Validar el formulario
+      const newErrors: Record<string, string> = {}
 
-    if (!validateForm()) {
-      Alert.alert("Error de validación", "Por favor, corrige los errores antes de continuar.")
-      return
-    }
+      const nameValidation = validateProductName(formData.nomProd)
+      if (!nameValidation.isValid) {
+        newErrors.nomProd = nameValidation.errors[0]
+      }
 
-    if (state.isAuthenticated && state.user?.rol === "admin" && state.token) {
-      console.log("🔑 Admin detected - using API mode")
+      const descValidation = validateRequired(formData.descripcionProd, "Descripción")
+      if (!descValidation.isValid) {
+        newErrors.descripcionProd = descValidation.errors[0]
+      } else if (formData.descripcionProd.trim().length < 5) {
+        newErrors.descripcionProd = "La descripción debe tener al menos 5 caracteres"
+      } else if (formData.descripcionProd.trim().length > 500) {
+        newErrors.descripcionProd = "La descripción no puede exceder 500 caracteres"
+      }
+
+      const stockValidation = validateStock(formData.stock)
+      if (!stockValidation.isValid) {
+        newErrors.stock = stockValidation.errors[0]
+      }
+
+      if (!formData.categoria) {
+        newErrors.categoria = "Selecciona una categoría"
+      }
+
+      if (tamanos.length === 0) {
+        newErrors.tamanos = "Agrega al menos un tamaño"
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors)
+        Alert.alert("Formulario incompleto", "Corrige los campos resaltados.")
+        return
+      }
+
+      if (!state.isAuthenticated || state.user?.rol !== "admin" || !state.token) {
+        Alert.alert("Permiso denegado", "Debes iniciar sesión como administrador.")
+        return
+      }
+
       setLoading(true)
 
-      try {
-        const tamanosFormateados = tamanos.map((t) => ({
-          nombre: t.nombre.trim(),
-          precio: Number(t.precio),
-        }))
+      const tamanosFormateados = tamanos.map((t) => ({
+        nombre: t.nombre.trim(),
+        precio: Number(t.precio),
+      }))
 
-        const productData: CreateProductData = {
-          nomProd: formData.nomProd.trim(),
-          descripcionProd: formData.descripcionProd.trim(),
-          stock: Number.parseInt(formData.stock),
-          categoria: formData.categoria,
-          imagen: formData.imagen.trim(),
-          tamanos: tamanosFormateados,
-        }
+      console.log("[v0] Tamaños formateados para enviar:", tamanosFormateados)
+      console.log("[v0] Producto data completo:", {
+        nomProd: formData.nomProd.trim(),
+        descripcionProd: formData.descripcionProd.trim(),
+        stock: Number(formData.stock),
+        categoria: formData.categoria.trim(),
+        imagen: imagenFinal,
+        tamanos: tamanosFormateados,
+      })
 
-        if (editingProduct) {
-          console.log("📝 Editando producto existente:", editingProduct._id)
-          const result = await productService.updateProduct(editingProduct._id, productData, state.token)
-
-          if (result.success) {
-            Alert.alert("Éxito", "Producto actualizado correctamente")
-            if (onUpdateProduct) {
-              onUpdateProduct(result.data || editingProduct)
-            }
-            if (onProductCreated) {
-              onProductCreated()
-            }
-            resetForm()
-            onClose()
-          } else {
-            Alert.alert("Error", result.message || "No se pudo actualizar el producto")
-            console.error("❌ Error en respuesta:", result)
-          }
-        } else {
-          console.log("✨ Creando nuevo producto")
-          const result = await productService.createProduct(productData, state.token)
-
-          if (result.success) {
-            Alert.alert("Éxito", "Producto creado correctamente")
-            if (onProductCreated) {
-              onProductCreated()
-            }
-            resetForm()
-            onClose()
-          } else {
-            Alert.alert("Error", result.message || "No se pudo crear el producto")
-            console.error("❌ Error en respuesta:", result)
-          }
-        }
-      } catch (error) {
-        console.error("❌ Network Error:", error)
-        Alert.alert("Error de Conexión", "No se pudo conectar con el servidor.")
-      } finally {
-        setLoading(false)
+      const productData: CreateProductData = {
+        nomProd: formData.nomProd.trim(),
+        descripcionProd: formData.descripcionProd.trim(),
+        stock: Number(formData.stock),
+        categoria: formData.categoria.trim(),
+        imagen: imagenFinal,
+        tamanos: tamanosFormateados,
       }
-      return
-    }
 
-    console.log("⚠️ No admin token - using local mode")
-    handleLocalSave()
+      const result = editingProduct
+        ? await productService.updateProduct(editingProduct._id, productData, state.token)
+        : await productService.createProduct(productData, state.token)
+
+      if (!result.success) {
+        console.log("[v0] Error response from backend:", result)
+        Alert.alert("Error", result.message || "No se pudo procesar el producto.")
+        return
+      }
+
+      Alert.alert("Éxito", editingProduct ? "Producto actualizado correctamente" : "Producto creado correctamente")
+
+      if (editingProduct) {
+        onUpdateProduct?.(result.data)
+      } else {
+        onProductCreated?.()
+      }
+
+      onReloadProducts?.()
+
+      resetForm()
+      onClose()
+    } catch (error) {
+      console.error("[handleSubmit] Error crítico:", error)
+      Alert.alert("Error inesperado", "Algo salió mal. Inténtalo nuevamente.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLocalSave = () => {
@@ -339,13 +424,17 @@ export function AddProductModal({
         quality: 0.8,
       })
 
-      if (!resultado.canceled) {
-        const imageUri = resultado.assets[0].uri
-        setImagePreview(imageUri)
-        updateField("imagen", "")
-      }
+      if (resultado.canceled) return
+
+      const imageUri = resultado.assets[0].uri
+
+      // Mostrar la imagen seleccionada
+      setImagePreview(imageUri)
+
+      // Limpiar URL si hubiera
+      updateField("imagen", "")
     } catch (error) {
-      console.error("[AddProductModal] Error seleccionando imagen:", error)
+      console.error("Error seleccionando imagen:", error)
       Alert.alert("Error", "Ocurrió un error al seleccionar la imagen")
     }
   }
@@ -462,14 +551,18 @@ export function AddProductModal({
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.label}>Tamaños y Precios</Text>
+                    {errors.tamanos && <Text style={styles.errorText}>{errors.tamanos}</Text>}
+
+                    {/* Lista de tamaños agregados */}
                     {tamanos.length > 0 && (
                       <View style={styles.tamanosList}>
                         {tamanos.map((tamano, index) => (
                           <View key={index} style={styles.tamanoItem}>
-                            <View style={styles.tamanoInfo}>
+                            <View>
                               <Text style={styles.tamanoNombre}>{tamano.nombre}</Text>
-                              <Text style={styles.tamanoPrecio}>${"Bs " + tamano.precio}</Text>
+                              <Text style={styles.tamanoPrecio}>Bs {tamano.precio}</Text>
                             </View>
+
                             <TouchableOpacity onPress={() => eliminarTamano(index)}>
                               <Ionicons name="trash" size={20} color="#e74c3c" />
                             </TouchableOpacity>
@@ -477,10 +570,12 @@ export function AddProductModal({
                         ))}
                       </View>
                     )}
-                    {errors.tamanos && <Text style={styles.errorText}>{errors.tamanos}</Text>}
 
+                    {/* Área para agregar tamaño */}
                     <View style={styles.addTamanoSection}>
                       <Text style={styles.subLabel}>Agregar Tamaño</Text>
+
+                      {/* Unidad gr / kg como EDITAR */}
                       <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
                         <TouchableOpacity
                           style={{
@@ -513,71 +608,71 @@ export function AddProductModal({
                         </TouchableOpacity>
                       </View>
 
-                      <View style={styles.addTamanoContainer}>
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Ej: 250"
-                          value={nuevoTamano.nombre}
-                          onChangeText={(value) => {
-                            let soloNumeros = value.replace(/[^0-9]/g, "")
+                      {/* Inputs EXACTOS de editar */}
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Ej: 250"
+                        value={nuevoTamano.nombre}
+                        onChangeText={(value) => {
+                        let limpio = value;
 
-                            if (!soloNumeros) {
-                              setNuevoTamano({ ...nuevoTamano, nombre: "" })
-                              return
-                            }
+                        if (unidadTamano === "gr") {
+                          // Solo números permitidos
+                          limpio = value.replace(/[^0-9]/g, "");
+                        } else {
+                          // Para kg permitir decimales
+                          limpio = value
+                            .replace(/,/g, ".")                // convertir coma a punto
+                            .replace(/[^0-9.]/g, "")           // solo números y punto
+                            .replace(/(\..*)\./g, "$1");       // evitar más de un punto
+                        }
 
-                            const num = Number(soloNumeros)
+                        setNuevoTamano({ ...nuevoTamano, nombre: limpio });
+                      }}
+                        keyboardType="numeric"
+                      />
 
-                            // Conversión automática de unidades
-                            if (unidadTamano === "gr" && num >= 1000) {
-                              // convertir gr → kg
-                              const kg = num / 1000
-                              setUnidadTamano("kg") // cambia visualmente el botón
-                              soloNumeros = kg.toString()
-                            }
+                      <TextInput
+                        style={[styles.input, { marginTop: 10 }]}
+                        placeholder="Precio"
+                        value={nuevoTamano.precio}
+                        onChangeText={(value) => {
+                          let sanitized = value.replace(/[^0-9.]/g, "")
 
-                            if (unidadTamano === "kg" && num < 1) {
-                              // convertir kg → gr
-                              const gramos = num * 1000
-                              setUnidadTamano("gr")
-                              soloNumeros = gramos.toString()
-                            }
+                          // Evita múltiples puntos decimales
+                          sanitized = sanitized.replace(/(\..*)\./g, "$1")
 
-                            setNuevoTamano({ ...nuevoTamano, nombre: soloNumeros })
-                          }}
-                          keyboardType="numeric"
-                        />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Ej: 25000"
-                          value={nuevoTamano.precio}
-                          onChangeText={(value) => {
-                            const soloNumeros = value.replace(/[^0-9.]/g, "")
-                            setNuevoTamano({ ...nuevoTamano, precio: soloNumeros })
-                          }}
-                          keyboardType="numeric"
-                        />
-                        <TouchableOpacity style={styles.agregarTamanoButton} onPress={agregarTamano}>
-                          <Ionicons name="add" size={20} color="#fff" />
-                          <Text style={styles.agregarTamanoButtonText}>Agregar</Text>
-                        </TouchableOpacity>
-                      </View>
+                          // Limita a 2 decimales mientras escribe
+                          sanitized = sanitized.replace(/^(\d+)\.(\d{0,2}).*$/, "$1.$2")
+
+                          setNuevoTamano({ ...nuevoTamano, precio: sanitized })
+                        }}
+                        onBlur={() => {
+                          if (nuevoTamano.precio) {
+                            const num = Number(nuevoTamano.precio)
+                            setNuevoTamano({
+                              ...nuevoTamano,
+                              precio: num.toFixed(2),
+                            })
+                          }
+                        }}
+                        keyboardType="numeric"
+                      />
+
+                      {/* Botón igual a EDITAR */}
+                      <TouchableOpacity style={styles.agregarTamanoButton} onPress={agregarTamano}>
+                        <Ionicons name="add" size={20} color="#fff" />
+                        <Text style={styles.agregarTamanoButtonText}>Agregar Tamaño</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
 
                   <View style={styles.inputContainer}>
                     <Text style={styles.label}>Imagen del Producto</Text>
 
-                    {(imagePreview || formData.imagen) && (
+                    {imagePreview !== "" && (
                       <View style={styles.imagePreviewContainer}>
-                        <Image
-                          source={{ uri: imagePreview || formData.imagen }}
-                          style={styles.imagePreview}
-                          onError={() => console.log("[v0] Error cargando preview de imagen")}
-                        />
-                        {!imagePreview && formData.imagen && (
-                          <Text style={styles.imagePreviewText}>Imagen actual de Cloudinary</Text>
-                        )}
+                        <Image source={{ uri: imagePreview }} style={styles.imagePreview} />
                       </View>
                     )}
 
@@ -587,7 +682,9 @@ export function AddProductModal({
                         style={styles.deleteImageButton}
                         onPress={() => {
                           setImagePreview("")
-                          updateField("imagen", "")
+                          if (!editingProduct) {
+                            updateField("imagen", "")
+                          }
                         }}
                       >
                         <Ionicons name="trash" size={20} color="#fff" />
@@ -596,31 +693,36 @@ export function AddProductModal({
                     )}
 
                     {/* BOTÓN SUBIR IMAGEN */}
-                    {!imagePreview && !formData.imagen && (
-                      <TouchableOpacity
-                        style={[styles.selectImageButton, uploadingImage && styles.disabledButton]}
-                        onPress={seleccionarImagen}
-                        disabled={uploadingImage}
-                      >
-                        {uploadingImage ? (
-                          <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                          <>
-                            <Ionicons name="cloud-upload" size={20} color="#fff" />
-                            <Text style={styles.selectImageButtonText}>Subir Imagen a Cloudinary</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
+                    {!imagePreview && formData.imagen.trim() === "" && (
+                      <>
+                        <TouchableOpacity
+                          style={[styles.selectImageButton, uploadingImage && styles.disabledButton]}
+                          onPress={seleccionarImagen}
+                          disabled={uploadingImage}
+                        >
+                          {uploadingImage ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <>
+                              <Ionicons name="cloud-upload" size={20} color="#fff" />
+                              <Text style={styles.selectImageButtonText}>Subir Imagen a Cloudinary</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+
+                        <Text style={styles.orText}>O pega una URL:</Text>
+                      </>
                     )}
 
-                    {!imagePreview && !formData.imagen && <Text style={styles.orText}>O pega una URL:</Text>}
-
-                    {!imagePreview && !formData.imagen && (
+                    {!imagePreview && (
                       <TextInput
                         style={[styles.input, errors.imagen && styles.inputError]}
                         placeholder="https://example.com/imagen.jpg"
                         value={formData.imagen}
-                        onChangeText={(value) => updateField("imagen", value)}
+                        onChangeText={(value) => {
+                          if (imagePreview !== "") setImagePreview("")
+                          updateField("imagen", value)
+                        }}
                         autoCapitalize="none"
                         editable={!uploadingImage}
                       />

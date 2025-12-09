@@ -52,7 +52,7 @@ export function LoginModal({ visible, onClose, onNavigateToRegister }: LoginModa
       const success = await loginWithApi(email, password)
 
       if (success) {
-        console.log("✅ Inicio de sesión exitoso desde modal")
+        console.log("Inicio de sesión exitoso desde modal")
         resetFields()
         onClose()
 
@@ -60,7 +60,7 @@ export function LoginModal({ visible, onClose, onNavigateToRegister }: LoginModa
         // Nota: Esto se ejecutará después de que el contexto se actualice
         setTimeout(() => {
           // El contexto debería estar actualizado ahora
-          console.log("🔍 Checking user role after login...")
+          console.log("Checking user role after login...")
         }, 100)
 
         Alert.alert("Éxito", "Has iniciado sesión correctamente.")
@@ -68,7 +68,7 @@ export function LoginModal({ visible, onClose, onNavigateToRegister }: LoginModa
         Alert.alert("Error", "Correo o contraseña incorrectos.")
       }
     } catch (error) {
-      console.error("❌ Error en login:", error)
+      console.error("Error en login:", error)
       Alert.alert("Error", "Error de conexión. Verifica tu internet.")
     } finally {
       setLoading(false)

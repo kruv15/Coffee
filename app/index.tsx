@@ -180,7 +180,7 @@ export default function HomeScreen() {
 
   // Agregar este useEffect después de los existentes para monitorear cambios en el estado de autenticación
   React.useEffect(() => {
-    console.log("🔍 Auth state changed in HomeScreen:", {
+    console.log("Auth state changed in HomeScreen:", {
       isAuthenticated: state.isAuthenticated,
       userEmail: state.user?.emailUsr || "none",
       userRole: state.user?.rol || "none",
@@ -203,7 +203,16 @@ export default function HomeScreen() {
       const idx = prev.findIndex((p: CartItem) => p._id === item._id && p.tamano === item.tamano)
       if (idx !== -1) {
         const updated = [...prev]
-        updated[idx] = { ...updated[idx], cantidad: updated[idx].cantidad + item.cantidad }
+        const currentQty = updated[idx].cantidad
+        const newQty = currentQty + item.cantidad
+        const maxStock = updated[idx].stock
+
+        if (newQty > maxStock) {
+          updated[idx] = { ...updated[idx], cantidad: maxStock }
+          return updated
+        }
+
+        updated[idx] = { ...updated[idx], cantidad: newQty }
         return updated
       }
       return [...prev, item]

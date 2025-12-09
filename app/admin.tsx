@@ -317,6 +317,7 @@ export default function AdminScreen() {
         }}
         onProductCreated={handleProductCreated}
         editingProduct={editingProduct}
+        onReloadProducts={loadProducts}
       />
     </View>
   )

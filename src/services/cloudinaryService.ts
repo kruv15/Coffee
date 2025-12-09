@@ -31,7 +31,6 @@ export const cloudinaryService = {
       // Crear FormData con la imagen
       const formData = new FormData()
 
-      // Agregar el archivo
       const file = {
         uri: imageUri,
         type: "image/jpeg",
@@ -47,7 +46,11 @@ export const cloudinaryService = {
       // Agregar tags para identificar imágenes de productos
       formData.append("tags", ["coffee-app", "producto"].join(","))
 
-      // Agregar preset de subida
+      if (!ENV.CLOUDINARY_UPLOAD_PRESET) {
+        console.error("[Cloudinary] CLOUDINARY_UPLOAD_PRESET no configurado")
+        return null
+      }
+
       formData.append("upload_preset", ENV.CLOUDINARY_UPLOAD_PRESET)
 
       // URL de subida sin autenticación (si usas unsigned)

@@ -49,7 +49,7 @@ export function UserProfileModal({ visible, onClose }: UserProfileModalProps) {
               Alert.alert('Éxito', 'Sesión cerrada correctamente');
               
             } catch (error) {
-              console.error('❌ Error in logout process:', error);
+              console.error('Error in logout process:', error);
               
               // En caso de error, forzar refresh de todas formas
               forceRefresh();
@@ -68,11 +68,11 @@ export function UserProfileModal({ visible, onClose }: UserProfileModalProps) {
 
   // No renderizar si el usuario no está autenticado
   if (!state.isAuthenticated || !state.user) {
-    console.log('⚠️ UserProfileModal: No authenticated user, not rendering');
+    console.log('UserProfileModal: No authenticated user, not rendering');
     return null;
   }
 
-  console.log('✅ UserProfileModal: Rendering for user:', state.user.emailUsr);
+  console.log('UserProfileModal: Rendering for user:', state.user.emailUsr);
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
